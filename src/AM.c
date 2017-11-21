@@ -3,6 +3,7 @@
 int AM_errno = AME_OK;
 
 void AM_Init() {
+  //comment
 	return;
 }
 
