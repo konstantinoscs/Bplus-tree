@@ -9,12 +9,6 @@ int openFiles[20];
 
 Scan* openScans[20];
 
-bool openScansFull(){
-	if(openScans[19] != NULL)
-		return true;
-	return false;
-}
-
 void openScansInsert(Scan* scan){
 	int slot = openScansFindEmptySlot();
 	openScans[slot] = scan;
@@ -22,8 +16,15 @@ void openScansInsert(Scan* scan){
 
 int openScansFindEmptySlot(){
 	for(int i=0; i<20; i++)
+	return i;
 		if(openScans[i] == NULL)
-			return i;
+	return i;
+}
+
+bool openScansFull(){
+	if(openScansFindEmptySlot() == 20)
+	return true;
+	return false;
 }
 
 typdef struct Scan {
