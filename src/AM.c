@@ -1,5 +1,12 @@
 #include "AM.h"
 
+typdef struct scan {
+	int fileDesc;			//the file that te scan refers to
+	int block_num;		//last block that was checked
+	int op;						//the operation
+	void *value;			//the value we target
+}scan;
+
 int AM_errno = AME_OK;
 
 void AM_Init() {
@@ -8,10 +15,10 @@ void AM_Init() {
 }
 
 
-int AM_CreateIndex(char *fileName, 
-	               char attrType1, 
-	               int attrLength1, 
-	               char attrType2, 
+int AM_CreateIndex(char *fileName,
+	               char attrType1,
+	               int attrLength1,
+	               char attrType2,
 	               int attrLength2) {
   return AME_OK;
 }
@@ -43,7 +50,7 @@ int AM_OpenIndexScan(int fileDesc, int op, void *value) {
 
 
 void *AM_FindNextEntry(int scanDesc) {
-	
+
 }
 
 
@@ -53,9 +60,9 @@ int AM_CloseIndexScan(int scanDesc) {
 
 
 void AM_PrintError(char *errString) {
-  
+
 }
 
 void AM_Close() {
-  
+
 }
