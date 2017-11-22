@@ -1,11 +1,61 @@
 #include "AM.h"
+#include <stdlib.h>
 
-typdef struct scan {
+int openFiles[20];
+
+/************************************************
+**************Scan*******************************
+*************************************************/
+
+Scan* openScans[20];
+
+bool openScansFull(){
+	if(openScans[19] != NULL)
+		return true;
+	return false;
+}
+
+void openScansInsert(Scan* scan){
+	int slot = openScansFindEmptySlot();
+	openScans[slot] = scan;
+}
+
+int openScansFindEmptySlot(){
+	for(int i=0; i<20; i++)
+		if(openScans[i] == NULL)
+			return i;
+}
+
+typdef struct Scan {
 	int fileDesc;			//the file that te scan refers to
 	int block_num;		//last block that was checked
-	int op;						//the operation
-	void *value;			//the value we target
-}scan;
+	int record_num;		//last record that was checked
+	int op;			//the operation
+	void *value;			//the target value
+}Scan;
+
+bool ScanInit(Scan* scan, int fileDesc, int op, void* value){
+	scan = malloc(sizeof(Scan));
+	scan->fileDesc = fileDesc;
+	scan->op = op;
+	scan->value = value;
+	scan->block_num = -1;
+	scan->record_num = -1;
+
+	if(openScansFull() != true){	//make sure array there is space for one more scan
+		openScansInsert[scan];
+	}
+	else{
+		free(scan);
+		return false;
+	}
+}
+
+
+
+/***************************************************
+***************AM_Epipedo***************************
+****************************************************/
 
 int AM_errno = AME_OK;
 
@@ -45,6 +95,9 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 
 int AM_OpenIndexScan(int fileDesc, int op, void *value) {
+	Scan scan;
+	ScanInit(&scan,fileDesc,op,value);
+
   return AME_OK;
 }
 
