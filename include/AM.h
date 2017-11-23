@@ -5,8 +5,11 @@
 
 extern int AM_errno;
 
+typedef int bool;
+
 #define AME_OK 0
 #define AME_EOF -1
+#define AME_WRONGARGS -2
 
 #define EQUAL 1
 #define NOT_EQUAL 2
@@ -14,6 +17,25 @@ extern int AM_errno;
 #define GREATER_THAN 4
 #define LESS_THAN_OR_EQUAL 5
 #define GREATER_THAN_OR_EQUAL 6
+
+#include "bf.h"
+#include "defn.h"
+
+typedef struct BlockMetadata
+{
+  bool isLeaf; //0 if its an inside node 1 if it is leaf
+  int blockId; //The unique id of this block
+  int nextPtr; //-2 if its an inside node #>0 if its is leaf, if its the last leaf -1
+  int recordsNum; // The amount of current records, either its keys or data
+} BlockMetadata;
+
+/*typedef struct attributesMetadata
+{
+  int type1; //Type of the first(key) attribute. 1 for int 2 for float 3 for string
+  int len1; //Length of the first attribute
+  int type2; //Type of the second attribute. 1 for int 2 for float 3 for string
+  int len2; //Length of the second attribute
+}attributesMetadata;*/
 
 void AM_Init( void );
 

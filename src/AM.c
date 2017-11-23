@@ -1,5 +1,19 @@
 #include "AM.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#define CALL_OR_DIE(call)     \
+  {                           \
+    BF_ErrorCode code = call; \
+    if (code != BF_OK) {      \
+      printf("Error\n");      \
+      BF_PrintError(code);    \
+      exit(code);             \
+    }                         \
+  }
+
+
 
 int openFiles[20];
 
@@ -52,6 +66,12 @@ bool ScanInit(Scan* scan, int fileDesc, int op, void* value){
 	}
 }
 
+/************************************************
+**************Create*******************************
+*************************************************/
+
+
+
 
 
 /***************************************************
@@ -71,6 +91,72 @@ int AM_CreateIndex(char *fileName,
 	               int attrLength1,
 	               char attrType2,
 	               int attrLength2) {
+
+  int type1,type2,len1,len2;
+  //attributesMetadata attrMeta;
+
+  if (attrType1 == INTEGER)
+  {
+    type1 = 1; //If type1 is equal to 1 the first attribute is int
+  }else if (attrType1 == FLOAT)
+  {
+    type1 = 2; //If type1 is equal to 2 the first attribute is float
+  }else if (attrType1 == STRING)
+  {
+    type1 = 3; //If type1 is equal to 3 the first attribute is string
+  }else{
+    return AME_WRONGARGS;
+  }
+  len1 = attrLength1;
+
+  if (attrType2 == INTEGER)
+  {
+    type2 = 1; //If type2 is equal to 1 the second attribute is int
+  }else if (attrType2 == FLOAT)
+  {
+    type2 = 2; //If type2 is equal to 2 the second attribute is float
+  }else if (attrType2 == STRING)
+  {
+    type2 = 3; //If type2 is equal to 3 the second attribute is string
+  }else{
+    return AME_WRONGARGS;
+  }
+  len2 = attrLength2;
+
+  /*attrMeta.type1 = type1;
+  attrMeta.len1 = len1;
+  attrMeta.type2 = type2;
+  attrMeta.len2 = len2;*/
+
+  BF_Block *tmpBlock;
+  BF_Block_Init(&tmpBlock);
+
+  int fd;
+  CALL_OR_DIE(BF_CreateFile(fileName));
+  CALL_OR_DIE(BF_OpenFile(fileName, &fd));
+
+  char *data;
+  char keyWord[15];
+  CALL_OR_DIE(BF_AllocateBlock(fd, tmpBlock));//Allocating the first block that will host the metadaτa
+
+  data = BF_Block_GetData(tmpBlock);
+  strcpy(keyWord,"DIBLU$");
+  memcpy(data, keyWord, sizeof(char)*(strlen(keyWord) + 1));//Copying the key-phrase DIBLU$ that shows us that this is a B+ file
+  data += sizeof(char)*(strlen(keyWord) + 1);
+  memcpy(data, &type1, sizeof(int));
+  data += sizeof(int);
+  memcpy(data, &len1, sizeof(int));
+  data += sizeof(int);
+  memcpy(data, &type2, sizeof(int));
+  data += sizeof(int);
+  memcpy(data, &len2, sizeof(int));
+  
+
+  BF_Block_SetDirty(tmpBlock);
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+
+  BF_Block_Destroy(&tmpBlock);
+  CALL_OR_DIE(BF_CloseFile(fd));
   return AME_OK;
 }
 
