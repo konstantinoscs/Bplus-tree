@@ -89,7 +89,6 @@ void AM_Init() {
 int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrType2, int attrLength2) {
 
   int type1,type2,len1,len2;
-  //attributesMetadata attrMeta;
 
   if (attrType1 == INTEGER)
   {
