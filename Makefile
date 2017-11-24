@@ -1,6 +1,6 @@
 am_main1:
 	@echo " Compile am_main1 ...";
-	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/am_main1.c ./src/AM.c -lbf -o ./build/am_main1
+	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/am_main1.c ./src/AM.c -lbf -o ./build/am_main1 -g
 
 am_main2:
 	@echo " Compile am_main2 ...";
@@ -22,3 +22,5 @@ bf_main3:
 	@echo " Compile bf_main3 ...";
 	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/bf_main3.c -lbf -o ./build/bf_main3 -O2
 
+clean:
+	rm -rf EMP-AGE EMP-DNAME EMP-FAULT EMP-NAME EMP-SAL

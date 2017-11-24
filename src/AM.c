@@ -21,7 +21,7 @@ int openFiles[20];
 **************Scan*******************************
 *************************************************/
 
-Scan* openScans[20];
+/*Scan* openScans[20];
 
 void openScansInsert(Scan* scan){
 	int slot = openScansFindEmptySlot();
@@ -64,7 +64,7 @@ bool ScanInit(Scan* scan, int fileDesc, int op, void* value){
 		free(scan);
 		return false;
 	}
-}
+}*/
 
 /************************************************
 **************Create*******************************
@@ -81,16 +81,12 @@ bool ScanInit(Scan* scan, int fileDesc, int op, void* value){
 int AM_errno = AME_OK;
 
 void AM_Init() {
-  //comment
+  BF_Init(MRU);
 	return;
 }
 
 
-int AM_CreateIndex(char *fileName,
-	               char attrType1,
-	               int attrLength1,
-	               char attrType2,
-	               int attrLength2) {
+int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrType2, int attrLength2) {
 
   int type1,type2,len1,len2;
   //attributesMetadata attrMeta;
@@ -109,6 +105,19 @@ int AM_CreateIndex(char *fileName,
   }
   len1 = attrLength1;
 
+  if (type1 == 1 || type1 == 2) // Checking if the argument type given matches the argument size given
+  {
+    if (len1 != 4)
+    {
+      return AME_WRONGARGS;
+    }
+  }else{
+    if (len1 < 1 || len1 > 255)
+    {
+      return AME_WRONGARGS;
+    }
+  }
+
   if (attrType2 == INTEGER)
   {
     type2 = 1; //If type2 is equal to 1 the second attribute is int
@@ -123,10 +132,24 @@ int AM_CreateIndex(char *fileName,
   }
   len2 = attrLength2;
 
+  if (type2 == 1 || type2 == 2) // Checking if the argument type given matches the argument size given
+  {
+    if (len2 != 4)
+    {
+      return AME_WRONGARGS;
+    }
+  }else{
+    if (len2 < 1 || len2 > 255)
+    {
+      return AME_WRONGARGS;
+    }
+  }
+
   /*attrMeta.type1 = type1;
   attrMeta.len1 = len1;
   attrMeta.type2 = type2;
   attrMeta.len2 = len2;*/
+
 
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
@@ -137,12 +160,14 @@ int AM_CreateIndex(char *fileName,
 
   char *data;
   char keyWord[15];
+  //BF_AllocateBlock(fd, tmpBlock);
   CALL_OR_DIE(BF_AllocateBlock(fd, tmpBlock));//Allocating the first block that will host the metadaτa
 
   data = BF_Block_GetData(tmpBlock);
   strcpy(keyWord,"DIBLU$");
-  memcpy(data, keyWord, sizeof(char)*(strlen(keyWord) + 1));//Copying the key-phrase DIBLU$ that shows us that this is a B+ file
-  data += sizeof(char)*(strlen(keyWord) + 1);
+  memcpy(data, keyWord, sizeof(char)*15);//Copying the key-phrase DIBLU$ that shows us that this is a B+ file
+  data += sizeof(char)*15; 
+  //Writing the attr1 and attr2 type and length right after the keyWord in the metadata block
   memcpy(data, &type1, sizeof(int));
   data += sizeof(int);
   memcpy(data, &len1, sizeof(int));
@@ -150,13 +175,13 @@ int AM_CreateIndex(char *fileName,
   memcpy(data, &type2, sizeof(int));
   data += sizeof(int);
   memcpy(data, &len2, sizeof(int));
-  
 
   BF_Block_SetDirty(tmpBlock);
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
   BF_Block_Destroy(&tmpBlock);
   CALL_OR_DIE(BF_CloseFile(fd));
+
   return AME_OK;
 }
 
@@ -167,6 +192,24 @@ int AM_DestroyIndex(char *fileName) {
 
 
 int AM_OpenIndex (char *fileName) {
+  BF_Block *tmpBlock;
+  int fileDesc, type1;
+  BF_Block_Init(&tmpBlock);
+  
+  CALL_OR_DIE(BF_OpenFile(fileName, &fileDesc));
+
+  char *data = NULL;
+  CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
+  data = BF_Block_GetData(tmpBlock);//and its data
+
+  if (data == NULL || strcmp(data, "DIBLU$"))//to check if this new opened file is a B+ tree file
+  {
+    printf("File: %s is not a B+ tree file. Exiting..\n", fileName);
+    exit(-1);
+  }
+
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+  BF_Block_Destroy(&tmpBlock);
   return AME_OK;
 }
 
@@ -182,8 +225,8 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 
 int AM_OpenIndexScan(int fileDesc, int op, void *value) {
-	Scan scan;
-	ScanInit(&scan,fileDesc,op,value);
+	//Scan scan;
+	//ScanInit(&scan,fileDesc,op,value);
 
   return AME_OK;
 }
@@ -200,7 +243,7 @@ int AM_CloseIndexScan(int scanDesc) {
 
 
 void AM_PrintError(char *errString) {
-
+  printf("%s\n", errString);
 }
 
 void AM_Close() {
