@@ -16,12 +16,35 @@
 
 
 
-typedef enum AM_ErrorCode {	OK,
-                      OPEN_SCANS_FULL
+typedef enum AM_ErrorCode {
+  OK,
+  OPEN_SCANS_FULL
+}AM_ErrorCode;
 
-                    }AM_ErrorCode;
+//openFiles holds the names of open files in the appropriate index
+//TODO not char * but some other struct?
+char * openFiles[20];
 
-int openFiles[20];
+//insert_file takes the name of a file and inserts it into openFiles
+//if openFiles is fulll then -1 is returned
+int insert_file(char * fileName){
+  for(int i=0; i<20; i++){
+    //if a spot is free put the fileName in it and return
+    //its index
+    if(openFiles[i] == NULL ){
+      openFiles[i] = malloc(strlen(fileName) +1);
+      strcpy(openFiles[i], fileName);
+      return i;
+    }
+  }
+  return -1;
+}
+
+//close_file removes a file with index i from openFiles
+void close_file(int i){
+  free(openFiles[i]);
+  openFiles[i] == NULL;
+}
 
 /************************************************
 **************Scan*******************************
@@ -167,6 +190,11 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   BF_Block_Init(&tmpBlock);
 
   int fd;
+  //temporarily insert the file in openFiles
+  int file_index = insert_file(fileName);
+  if(file_index == -1)
+    return AME_MAXFILES;
+
   CALL_OR_DIE(BF_CreateFile(fileName));
   CALL_OR_DIE(BF_OpenFile(fileName, &fd));
 
@@ -193,6 +221,8 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
 
   BF_Block_Destroy(&tmpBlock);
   CALL_OR_DIE(BF_CloseFile(fd));
+  //remove the file from openFiles array
+  close_file(file_index);
 
   return AME_OK;
 }
@@ -207,6 +237,10 @@ int AM_OpenIndex (char *fileName) {
   BF_Block *tmpBlock;
   int fileDesc, type1;
   BF_Block_Init(&tmpBlock);
+  int file_index = insert_file(fileName);
+  //check if we have reached the maximum number of files
+  if(file_index == -1)
+    return AME_MAXFILES;
 
   CALL_OR_DIE(BF_OpenFile(fileName, &fileDesc));
 
@@ -229,6 +263,10 @@ int AM_OpenIndex (char *fileName) {
 
 
 int AM_CloseIndex (int fileDesc) {
+  //TODO other stuff?
+
+  //remove the file from the openFiles array
+  close_file(fileDesc);
   return AME_OK;
 }
 
@@ -240,7 +278,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 int AM_OpenIndexScan(int fileDesc, int op, void *value) {
   Scan scan;
-  ScanInit(&scan,fileDesc,op,value);
+  ScanInit(&scan, fileDesc, op, value);
 
   return AME_OK;
 }
