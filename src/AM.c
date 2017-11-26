@@ -266,7 +266,6 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 
 int AM_OpenIndexScan(int fileDesc, int op, void *value) {
-<<<<<<< HEAD
   Scan* scan = malloc(sizeof(Scan));
   scan->fileDesc = fileDesc;
 	scan->op = op;
@@ -283,7 +282,7 @@ int AM_OpenIndexScan(int fileDesc, int op, void *value) {
 
 
 void *AM_FindNextEntry(int scanDesc) {
-  
+
 }
 
 
