@@ -272,10 +272,6 @@ int AM_OpenIndexScan(int fileDesc, int op, void *value) {
 	scan->value = value;
 	scan->block_num = -1;
 	scan->record_num = -1;
-=======
-  Scan scan;
-  ScanInit(&scan, fileDesc, op, value);
->>>>>>> 2f294059a66ca65a6b4924db49a0238933bf79f7
 
 	return openScansInsert(scan);
 }
