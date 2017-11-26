@@ -165,7 +165,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   data = BF_Block_GetData(tmpBlock);
   strcpy(keyWord,"DIBLU$");
   memcpy(data, keyWord, sizeof(char)*15);//Copying the key-phrase DIBLU$ that shows us that this is a B+ file
-  data += sizeof(char)*15; 
+  data += sizeof(char)*15;
   //Writing the attr1 and attr2 type and length right after the keyWord in the metadata block
   memcpy(data, &type1, sizeof(int));
   data += sizeof(int);
@@ -194,8 +194,10 @@ int AM_OpenIndex (char *fileName) {
   BF_Block *tmpBlock;
   int fileDesc, type1;
   BF_Block_Init(&tmpBlock);
-  
+
   CALL_OR_DIE(BF_OpenFile(fileName, &fileDesc));
+
+  //here should be the error checking
 
   char *data = NULL;
   CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
