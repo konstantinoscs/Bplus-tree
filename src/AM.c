@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define CALL_OR_DIE(call)     \
   {                           \
@@ -11,9 +12,14 @@
       BF_PrintError(code);    \
       exit(code);             \
     }                         \
-  }
+  }                           \
 
 
+
+typedef enum AM_ErrorCode {	OK,
+                      OPEN_SCANS_FULL
+
+                    }AM_ErrorCode;
 
 int openFiles[20];
 
@@ -21,27 +27,7 @@ int openFiles[20];
 **************Scan*******************************
 *************************************************/
 
-/*Scan* openScans[20];
-
-void openScansInsert(Scan* scan){
-	int slot = openScansFindEmptySlot();
-	openScans[slot] = scan;
-}
-
-int openScansFindEmptySlot(){
-	for(int i=0; i<20; i++)
-	return i;
-		if(openScans[i] == NULL)
-	return i;
-}
-
-bool openScansFull(){
-	if(openScansFindEmptySlot() == 20)
-	return true;
-	return false;
-}
-
-typdef struct Scan {
+typedef struct Scan {
 	int fileDesc;			//the file that te scan refers to
 	int block_num;		//last block that was checked
 	int record_num;		//last record that was checked
@@ -49,8 +35,35 @@ typdef struct Scan {
 	void *value;			//the target value
 }Scan;
 
-bool ScanInit(Scan* scan, int fileDesc, int op, void* value){
-	scan = malloc(sizeof(Scan));
+Scan* openScans[20];
+
+int openScansInsert(Scan* scan);  //inserts a Scan in openScans[20] if possible and returns the position
+int openScansFindEmptySlot();     //finds the first empty slot in openScans[20]
+bool openScansFull();             //checks
+AM_ErrorCode ScanInit(Scan* scan, int fileDesc, int op, void* value);
+
+
+int openScansInsert(Scan* scan){
+	int slot = openScansFindEmptySlot();
+	openScans[slot] = scan;
+	return slot;
+}
+
+int openScansFindEmptySlot(){
+	int i;
+	for(i=0; i<20; i++)
+		if(openScans[i] == NULL)
+			return i;
+	return i;
+}
+
+bool openScansFull(){
+	if(openScansFindEmptySlot() == 20)
+		return true;
+	return false;
+}
+
+AM_ErrorCode ScanInit(Scan* scan, int fileDesc, int op, void* value){
 	scan->fileDesc = fileDesc;
 	scan->op = op;
 	scan->value = value;
@@ -58,13 +71,13 @@ bool ScanInit(Scan* scan, int fileDesc, int op, void* value){
 	scan->record_num = -1;
 
 	if(openScansFull() != true){	//make sure array there is space for one more scan
-		openScansInsert[scan];
+		return openScansInsert(scan);
 	}
 	else{
 		free(scan);
-		return false;
+		return OPEN_SCANS_FULL;
 	}
-}*/
+}
 
 /************************************************
 **************Create*******************************
@@ -165,7 +178,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   data = BF_Block_GetData(tmpBlock);
   strcpy(keyWord,"DIBLU$");
   memcpy(data, keyWord, sizeof(char)*15);//Copying the key-phrase DIBLU$ that shows us that this is a B+ file
-  data += sizeof(char)*15; 
+  data += sizeof(char)*15;
   //Writing the attr1 and attr2 type and length right after the keyWord in the metadata block
   memcpy(data, &type1, sizeof(int));
   data += sizeof(int);
@@ -194,7 +207,7 @@ int AM_OpenIndex (char *fileName) {
   BF_Block *tmpBlock;
   int fileDesc, type1;
   BF_Block_Init(&tmpBlock);
-  
+
   CALL_OR_DIE(BF_OpenFile(fileName, &fileDesc));
 
   char *data = NULL;
@@ -224,8 +237,8 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 
 int AM_OpenIndexScan(int fileDesc, int op, void *value) {
-	//Scan scan;
-	//ScanInit(&scan,fileDesc,op,value);
+  Scan scan;
+  ScanInit(&scan,fileDesc,op,value);
 
   return AME_OK;
 }
