@@ -58,48 +58,37 @@ typedef struct Scan {
 	void *value;			//the target value
 }Scan;
 
-Scan* openScans[20];
+#define MAX_SCANS 20
+Scan* openScans[MAX_SCANS];  //This is where open Scans are saved. The array is initialized with NULL's.
 
-int openScansInsert(Scan* scan);  //inserts a Scan in openScans[20] if possible and returns the position
-int openScansFindEmptySlot();     //finds the first empty slot in openScans[20]
+int openScansInsert(Scan* scan);  //inserts a Scan in openScans[] if possible and returns the position
+int openScansFindEmptySlot();     //finds the first empty slot in openScans[]
 bool openScansFull();             //checks
-AM_ErrorCode ScanInit(Scan* scan, int fileDesc, int op, void* value);
 
 
 int openScansInsert(Scan* scan){
-	int slot = openScansFindEmptySlot();
-	openScans[slot] = scan;
-	return slot;
+	int pos = openScansFindEmptySlot();
+  if(openScansFull() != true)
+    openScans[pos] = scan;
+  else{
+    fprintf(stderr, "openScans[] can't fit more Scans! Exiting...\n");
+    exit(0);
+  }
+  return pos;
 }
 
 int openScansFindEmptySlot(){
 	int i;
-	for(i=0; i<20; i++)
+	for(i=0; i<MAX_SCANS; i++)
 		if(openScans[i] == NULL)
 			return i;
 	return i;
 }
 
 bool openScansFull(){
-	if(openScansFindEmptySlot() == 20)
+	if(openScansFindEmptySlot() == MAX_SCANS) //if you cant find empty slot in [0-19] then its full
 		return true;
 	return false;
-}
-
-AM_ErrorCode ScanInit(Scan* scan, int fileDesc, int op, void* value){
-	scan->fileDesc = fileDesc;
-	scan->op = op;
-	scan->value = value;
-	scan->block_num = -1;
-	scan->record_num = -1;
-
-	if(openScansFull() != true){	//make sure array there is space for one more scan
-		return openScansInsert(scan);
-	}
-	else{
-		free(scan);
-		return OPEN_SCANS_FULL;
-	}
 }
 
 /************************************************
@@ -277,15 +266,24 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 
 int AM_OpenIndexScan(int fileDesc, int op, void *value) {
+<<<<<<< HEAD
+  Scan* scan = malloc(sizeof(Scan));
+  scan->fileDesc = fileDesc;
+	scan->op = op;
+	scan->value = value;
+	scan->block_num = -1;
+	scan->record_num = -1;
+=======
   Scan scan;
   ScanInit(&scan, fileDesc, op, value);
+>>>>>>> 2f294059a66ca65a6b4924db49a0238933bf79f7
 
-  return AME_OK;
+	return openScansInsert(scan);
 }
 
 
 void *AM_FindNextEntry(int scanDesc) {
-
+  
 }
 
 
