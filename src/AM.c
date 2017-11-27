@@ -135,7 +135,7 @@ int findLeaf(int fd, int key){
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
 
-  int keyType, keyLength, rootId;
+  int keyType, keyLength, rootId, tmpBlockPtr, tmpKey, keysNumber, targetBlockId;
   void *data;
   char isLeaf = 0;
 
@@ -154,20 +154,67 @@ int findLeaf(int fd, int key){
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
-  CALL_OR_DIE(BF_GetBlock(fd, rootId, tmpBlock));
+  CALL_OR_DIE(BF_GetBlock(fd, rootId, tmpBlock)); //Get the root block to start searching
   data = BF_Block_GetData(tmpBlock);
 
   memcpy(&isLeaf, data, sizeof(char));
 
   if (isLeaf == 1) //If the root is a leaf we are on the only leaf so the key should be here
   {
+    CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
     BF_Block_Destroy(&tmpBlock);
     return rootId;
   }
 
-  
+  while( isLeaf == 0){  //Everytime we get in a new block to search that is not a leaf
+
+    int currKey = 0;  //Initialize the index of keys pointer
+
+    data += (sizeof(char) + sizeof(int)*2);  //Move the data pointer over the isLeaf byte,the block id and the next block pointer they are useless for now
+
+    memcpy(&keysNumber, data, sizeof(int)); //Get the number of the keys that exist in this block
+    data += sizeof(int);
+    memcpy(&tmpBlockPtr, data, sizeof(int));  // Get the first pointer to child block that exist in this block
+    data += sizeof(int);
+    memcpy(&tmpKey, data, sizeof(int)); //Get the value of the first key in this block
+    data += sizeof(int);
+    currKey++;  //Increase the index pointer
+
+    while(key >= tmpKey && currKey < keysNumber){ //while the key that we look for is bigger than the key that we have now
+      //and the index number is smaller than the amount of keys in this block (so we are not on the last key) keep traversing
+      memcpy(&tmpBlockPtr, data, sizeof(int));  //get the pointer to the child block that is before the new tmpKey
+      data += sizeof(int);
+      memcpy(&tmpKey, data, sizeof(int)); //get the new tmp key
+      data += sizeof(int);
+      currKey++;
+    }
+
+    if (key >= tmpKey)  //if the loop stopped because we reached the last key on this block but still the key
+    //that we are looking for is bigger than the last key
+    {
+      memcpy(&tmpBlockPtr, data, sizeof(int));  //Then get the last child pointer of this block
+      CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+
+      CALL_OR_DIE(BF_GetBlock(fd, tmpBlockPtr, tmpBlock));  //Get to this block
+      data = BF_Block_GetData(tmpBlock);
+      memcpy(&isLeaf, data, sizeof(char));  //And check if it is a leaf
+    }else{  //Otherwise the loop has stopped because we reached to the right position of the block and now we go to the correct child block
+      CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+
+      CALL_OR_DIE(BF_GetBlock(fd, tmpBlockPtr, tmpBlock));
+      data = BF_Block_GetData(tmpBlock);
+      memcpy(&isLeaf, data, sizeof(char));
+    }
+  }
+
+  //After all this loops we are on the block that our key exists or it should at least
+  data += sizeof(char); //So move to the block id the data pointer
+  memcpy(&targetBlockId, data, sizeof(int));  //Get the block id
+
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
-  return 0;
+
+  return targetBlockId; //And return it
 }
 
 /***************************************************
