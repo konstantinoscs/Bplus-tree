@@ -26,7 +26,7 @@ typedef struct BlockMetadata
 {
   bool isLeaf; //0 if its an inside node 1 if it is leaf
   int blockId; //The unique id of this block
-  int nextPtr; //-2 if its an inside node #>0 if its is leaf, if its the last leaf -1
+  int nextPtr; //-2 if its an inside node, #>0 if its is leaf, -1 if its the last leaf
   int recordsNum; // The amount of current records, either its keys or data
 } BlockMetadata;
 
