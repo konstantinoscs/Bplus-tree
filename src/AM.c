@@ -139,12 +139,12 @@ int findLeaf(int fd, int key){
   void *data;
   char isLeaf = 0;
 
-  //Getting the first block to have access in the first attrr abd the root block id 
+  //Getting the first block to have access in the first attrr abd the root block id
   CALL_OR_DIE(BF_GetBlock(fd, 0, tmpBlock));
   data = BF_Block_GetData(tmpBlock);
 
   data += sizeof(char)*15; //move further from the keyword
-  
+
   //Get the type and the length of this file's key and its root Id
   memcpy(&keyType, data, sizeof(int));
   data += sizeof(int);
@@ -254,9 +254,9 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
 
   int fd;
   //temporarily insert the file in openFiles
-  //int file_index = insert_file(fileName);
-  //if(file_index == -1)
-  //  return AME_MAXFILES;
+  int file_index = insert_file(fileName);
+  if(file_index == -1)
+    return AME_MAXFILES;
 
   CALL_OR_DIE(BF_CreateFile(fileName));
   CALL_OR_DIE(BF_OpenFile(fileName, &fd));
@@ -334,14 +334,12 @@ int AM_OpenIndex (char *fileName) {
   BF_Block *tmpBlock;
   int fileDesc, type1;
   BF_Block_Init(&tmpBlock);
-  //int file_index = insert_file(fileName);
+  int file_index = insert_file(fileName);
   //check if we have reached the maximum number of files
-  //if(file_index == -1)
-  //  return AME_MAXFILES;
+  if(file_index == -1)
+    return AME_MAXFILES;
 
   CALL_OR_DIE(BF_OpenFile(fileName, &fileDesc));
-
-  //here should be the error checking
 
   char *data = NULL;
   CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
@@ -365,7 +363,8 @@ int AM_OpenIndex (char *fileName) {
   BF_Block_Destroy(&tmpBlock);
 
   findLeaf(fileDesc,1);
-  return AME_OK;
+  //return the file index
+  return file_index;
 }
 
 
@@ -373,7 +372,7 @@ int AM_CloseIndex (int fileDesc) {
   //TODO other stuff?
 
   //remove the file from the openFiles array
-  //close_file(fileDesc);
+  close_file(fileDesc);
   return AME_OK;
 }
 
