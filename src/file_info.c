@@ -25,12 +25,12 @@ void insert_bfd(int fileDesc, int bf_desc){
 //close_file removes a file with index i from openFiles
 void close_file(int i){
   free(openFiles[i]);
-  openFiles[i] == NULL;
+  openFiles[i] = NULL;
 }
 
 void delete_files(){
 	for(int i=0; i<20; i++){
-		if(openFiles[i]!=NULL)
+		if(openFiles[i]!= NULL)
 			free(openFiles[i]);
 	}
 }
