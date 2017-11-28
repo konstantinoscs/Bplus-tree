@@ -353,7 +353,7 @@ int findRecord(void * data, int fd, void * value1){
     if(++record == records_no)
       return -1;
   }
-  return record;
+  return record-1;
 }
 
 /***************************************************
