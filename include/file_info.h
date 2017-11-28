@@ -1,16 +1,16 @@
 #ifndef FILE_INFO_H
 #define FILE_INFO_H
 
+extern file_info * openFiles[20];
+
 //file_info keeps all the necessary info about every open file
-typedef struct file_info{
+typdef struct file_info{
   int bf_desc;    //the descriptor of BF level
   int type1;
   int length1;
   int type2;
   int length2;
 }file_info;
-
-extern file_info * openFiles[20];
 
 //insert_file takes the name of a file and inserts it into openFiles
 //if openFiles is fulll then -1 is returned

@@ -5,12 +5,12 @@
 
 extern int AM_errno;
 
-typedef int bool;
+//typedef int bool;
 
 #define AME_OK 0
 #define AME_EOF -1
 #define AME_WRONGARGS -2
-#define AME_MAXFILES -3;
+#define AME_MAXFILES -3
 
 #define EQUAL 1
 #define NOT_EQUAL 2

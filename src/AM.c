@@ -241,7 +241,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   CALL_OR_DIE(BF_OpenFile(fileName, &fd));
 
   //put the bf level decriptor after you opened
-  insert_bfd(fd);
+  insert_bfd(file_index, fd);
 
   void *data;
   char keyWord[15];
@@ -314,19 +314,19 @@ int AM_DestroyIndex(char *fileName) {
 
 int AM_OpenIndex (char *fileName) {
   BF_Block *tmpBlock;
-  int fileDesc, type1;
+  int fileDesc;
 
   int type1,type2,len1,len2;
 
-  if (typeChecker(attrType1, attrLength1, &type1, &len1) != AME_OK)
-  {
-    return AME_WRONGARGS;
-  }
+  // if (typeChecker(attrType1, attrLength1, &type1, &len1) != AME_OK)
+  // {
+  //   return AME_WRONGARGS;
+  // }
 
-  if (typeChecker(attrType2, attrLength2, &type2, &len2) != AME_OK)
-  {
-    return AME_WRONGARGS;
-  }
+  // if (typeChecker(attrType2, attrLength2, &type2, &len2) != AME_OK)
+  // {
+  //   return AME_WRONGARGS;
+  // }
 
 
   
@@ -338,7 +338,7 @@ int AM_OpenIndex (char *fileName) {
   BF_Block_Init(&tmpBlock);
   CALL_OR_DIE(BF_OpenFile(fileName, &fileDesc));
 
-  insert_bfd(fileDesc);
+  insert_bfd(file_index, fileDesc);
 
   char *data = NULL;
   CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
