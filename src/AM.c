@@ -95,9 +95,127 @@ bool openScansFull(){
 **************Create*******************************
 *************************************************/
 
+int typeChecker(char attrType, int attrLength, int *type, int *len){
+  if (attrType == INTEGER)
+  {
+    *type = 1; //If type is equal to 1 the attribute is int
+  }else if (attrType == FLOAT)
+  {
+    *type = 2; //If type is equal to 2 the attribute is float
+  }else if (attrType == STRING)
+  {
+    *type = 3; //If type is equal to 3 the attribute is string
+  }else{
+    return AME_WRONGARGS;
+  }
 
+  *len = attrLength;
 
+  if (*type == 1 || *type == 2) // Checking if the argument type given matches the argument size given
+  {
+    if (*len != 4)
+    {
+      return AME_WRONGARGS;
+    }
+  }else{
+    if (*len < 1 || *len > 255)
+    {
+      return AME_WRONGARGS;
+    }
+  }
 
+  return AME_OK;
+}
+
+/************************************************
+**************Insert*******************************
+*************************************************/
+
+int findLeaf(int fd, int key){
+  BF_Block *tmpBlock;
+  BF_Block_Init(&tmpBlock);
+
+  int keyType, keyLength, rootId, tmpBlockPtr, tmpKey, keysNumber, targetBlockId;
+  void *data;
+  char isLeaf = 0;
+
+  //Getting the first block to have access in the first attrr abd the root block id
+  CALL_OR_DIE(BF_GetBlock(fd, 0, tmpBlock));
+  data = BF_Block_GetData(tmpBlock);
+
+  data += sizeof(char)*15; //move further from the keyword
+
+  //Get the type and the length of this file's key and its root Id
+  memcpy(&keyType, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&keyLength, data, sizeof(int));
+  data += (sizeof(int)*3);
+  memcpy(&rootId, data,sizeof(int));
+
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+
+  CALL_OR_DIE(BF_GetBlock(fd, rootId, tmpBlock)); //Get the root block to start searching
+  data = BF_Block_GetData(tmpBlock);
+
+  memcpy(&isLeaf, data, sizeof(char));
+
+  if (isLeaf == 1) //If the root is a leaf we are on the only leaf so the key should be here
+  {
+    CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+    BF_Block_Destroy(&tmpBlock);
+    return rootId;
+  }
+
+  while( isLeaf == 0){  //Everytime we get in a new block to search that is not a leaf
+
+    int currKey = 0;  //Initialize the index of keys pointer
+
+    data += (sizeof(char) + sizeof(int)*2);  //Move the data pointer over the isLeaf byte,the block id and the next block pointer they are useless for now
+
+    memcpy(&keysNumber, data, sizeof(int)); //Get the number of the keys that exist in this block
+    data += sizeof(int);
+    memcpy(&tmpBlockPtr, data, sizeof(int));  // Get the first pointer to child block that exist in this block
+    data += sizeof(int);
+    memcpy(&tmpKey, data, sizeof(int)); //Get the value of the first key in this block
+    data += sizeof(int);
+    currKey++;  //Increase the index pointer
+
+    while(key >= tmpKey && currKey < keysNumber){ //while the key that we look for is bigger than the key that we have now
+      //and the index number is smaller than the amount of keys in this block (so we are not on the last key) keep traversing
+      memcpy(&tmpBlockPtr, data, sizeof(int));  //get the pointer to the child block that is before the new tmpKey
+      data += sizeof(int);
+      memcpy(&tmpKey, data, sizeof(int)); //get the new tmp key
+      data += sizeof(int);
+      currKey++;
+    }
+
+    if (key >= tmpKey)  //if the loop stopped because we reached the last key on this block but still the key
+    //that we are looking for is bigger than the last key
+    {
+      memcpy(&tmpBlockPtr, data, sizeof(int));  //Then get the last child pointer of this block
+      CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+
+      CALL_OR_DIE(BF_GetBlock(fd, tmpBlockPtr, tmpBlock));  //Get to this block
+      data = BF_Block_GetData(tmpBlock);
+      memcpy(&isLeaf, data, sizeof(char));  //And check if it is a leaf
+    }else{  //Otherwise the loop has stopped because we reached to the right position of the block and now we go to the correct child block
+      CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+
+      CALL_OR_DIE(BF_GetBlock(fd, tmpBlockPtr, tmpBlock));
+      data = BF_Block_GetData(tmpBlock);
+      memcpy(&isLeaf, data, sizeof(char));
+    }
+  }
+
+  //After all this loops we are on the block that our key exists or it should at least
+  data += sizeof(char); //So move to the block id the data pointer
+  memcpy(&targetBlockId, data, sizeof(int));  //Get the block id
+
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+  BF_Block_Destroy(&tmpBlock);
+
+  return targetBlockId; //And return it
+}
 
 /***************************************************
 ***************AM_Epipedo***************************
@@ -115,58 +233,14 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
 
   int type1,type2,len1,len2;
 
-  if (attrType1 == INTEGER)
+  if (typeChecker(attrType1, attrLength1, &type1, &len1) != AME_OK)
   {
-    type1 = 1; //If type1 is equal to 1 the first attribute is int
-  }else if (attrType1 == FLOAT)
-  {
-    type1 = 2; //If type1 is equal to 2 the first attribute is float
-  }else if (attrType1 == STRING)
-  {
-    type1 = 3; //If type1 is equal to 3 the first attribute is string
-  }else{
     return AME_WRONGARGS;
   }
-  len1 = attrLength1;
 
-  if (type1 == 1 || type1 == 2) // Checking if the argument type given matches the argument size given
+  if (typeChecker(attrType2, attrLength2, &type2, &len2) != AME_OK)
   {
-    if (len1 != 4)
-    {
-      return AME_WRONGARGS;
-    }
-  }else{
-    if (len1 < 1 || len1 > 255)
-    {
-      return AME_WRONGARGS;
-    }
-  }
-
-  if (attrType2 == INTEGER)
-  {
-    type2 = 1; //If type2 is equal to 1 the second attribute is int
-  }else if (attrType2 == FLOAT)
-  {
-    type2 = 2; //If type2 is equal to 2 the second attribute is float
-  }else if (attrType2 == STRING)
-  {
-    type2 = 3; //If type2 is equal to 3 the second attribute is string
-  }else{
     return AME_WRONGARGS;
-  }
-  len2 = attrLength2;
-
-  if (type2 == 1 || type2 == 2) // Checking if the argument type given matches the argument size given
-  {
-    if (len2 != 4)
-    {
-      return AME_WRONGARGS;
-    }
-  }else{
-    if (len2 < 1 || len2 > 255)
-    {
-      return AME_WRONGARGS;
-    }
   }
 
   /*attrMeta.type1 = type1;
@@ -187,7 +261,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   CALL_OR_DIE(BF_CreateFile(fileName));
   CALL_OR_DIE(BF_OpenFile(fileName, &fd));
 
-  char *data;
+  void *data;
   char keyWord[15];
   //BF_AllocateBlock(fd, tmpBlock);
   CALL_OR_DIE(BF_AllocateBlock(fd, tmpBlock));//Allocating the first block that will host the metadaτa
@@ -208,10 +282,44 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   BF_Block_SetDirty(tmpBlock);
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
+  //Allocating the root block
+  CALL_OR_DIE(BF_AllocateBlock(fd, tmpBlock));
+  int blockNum, nextPtr, recordsNum;
+  CALL_OR_DIE(BF_GetBlockCounter(fd, &blockNum));
+  blockNum--;
+
+  data = BF_Block_GetData(tmpBlock);
+
+  char c = 1; //It is leaf so the first byte of the block is going to be 1
+  memcpy(data, &c, sizeof(char));
+  data += sizeof(char);
+
+  memcpy(data, &blockNum, sizeof(int)); //Writing the block's id to it
+  data += sizeof(int);
+
+  nextPtr = -1; //It is a leaf and the last one
+  memcpy(data, &nextPtr, sizeof(int));
+  data += sizeof(int);
+
+  recordsNum = 0; //No records yet inserted
+  memcpy(data, &recordsNum, sizeof(int));
+
+  BF_Block_SetDirty(tmpBlock);
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+
+  //Getting again the first (the metadata) block to write after the attributes info the root block id
+  CALL_OR_DIE(BF_GetBlock(fd, 0, tmpBlock));
+  data = BF_Block_GetData(tmpBlock);
+  data += (sizeof(char)*15 + sizeof(int)*4);
+  printf("GRAFW %d\n", blockNum);
+  memcpy(data, &blockNum, sizeof(int));
+  BF_Block_SetDirty(tmpBlock);
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+
   BF_Block_Destroy(&tmpBlock);
   CALL_OR_DIE(BF_CloseFile(fd));
   //remove the file from openFiles array
-  close_file(file_index);
+  //close_file(file_index);
 
   return AME_OK;
 }
@@ -233,8 +341,6 @@ int AM_OpenIndex (char *fileName) {
 
   CALL_OR_DIE(BF_OpenFile(fileName, &fileDesc));
 
-  //here should be the error checking
-
   char *data = NULL;
   CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
   data = BF_Block_GetData(tmpBlock);//and its data
@@ -245,9 +351,19 @@ int AM_OpenIndex (char *fileName) {
     exit(-1);
   }
 
+  /*data += sizeof(char)*15;
+  int type, len;
+  memcpy(&type, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&len, data, sizeof(int));
+
+  printf("%d %d\n", type, len);*/
+
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
-  return AME_OK;
+
+  //return the file index
+  return file_index;
 }
 
 
@@ -261,19 +377,69 @@ int AM_CloseIndex (int fileDesc) {
 
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
+  BF_Block *tmpBlock;
+  BF_Block_Init(&tmpBlock);
+
+  void *data = NULL;
+  CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
+  data = BF_Block_GetData(tmpBlock);//and its data
+
+  int type1, len1, type2, len2, targetBlockId;
+
+  data += sizeof(char)*15; //skip the diblus keyword
+  //Getting the attr1 and attr2 type and length from the metadata block
+  memcpy(&type1, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&len1, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&type2, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&len2, data, sizeof(int));
+
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+  BF_Block_Destroy(&tmpBlock);
+
+  if (type1 == 1)
+  {
+    targetBlockId = findLeaf(fileDesc, *(int *)value1);
+  }else{
+    //WE HAVE TO MAKE A FIND LEAF FOR STRINGS AND FLOATS
+  }
+
+  BF_Block_Init(&tmpBlock);
+
+  CALL_OR_DIE(BF_GetBlock(fileDesc, targetBlockId, tmpBlock));//Getting the block that we are supposed to insert the new record
+  data = BF_Block_GetData(tmpBlock);//and its data
+
+  data += (sizeof(char) + sizeof(int)*2);
+
+  int currRecords, maxRecords;
+
+  memcpy(&currRecords, data, sizeof(int));
+
+  maxRecords = (BF_BLOCK_SIZE - (sizeof(char) + sizeof(int)*3))/(len1 + len2);
+
+  //An oxi gemato apla valto sto telos afou traversareis an gemato parta arxidia mou kai kanta soupa
+
+
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+  BF_Block_Destroy(&tmpBlock);
+
+
   return AME_OK;
 }
 
 
 int AM_OpenIndexScan(int fileDesc, int op, void *value) {
-  Scan* scan = malloc(sizeof(Scan));
+  /*Scan* scan = malloc(sizeof(Scan));
   scan->fileDesc = fileDesc;
 	scan->op = op;
 	scan->value = value;
 	scan->block_num = -1;
 	scan->record_num = -1;
 
-	return openScansInsert(scan);
+	return openScansInsert(scan);*/
+  return AME_OK;
 }
 
 

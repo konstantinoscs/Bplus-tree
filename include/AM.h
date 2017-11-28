@@ -26,17 +26,18 @@ typedef struct BlockMetadata
 {
   bool isLeaf; //0 if its an inside node 1 if it is leaf
   int blockId; //The unique id of this block
-  int nextPtr; //-2 if its an inside node #>0 if its is leaf, if its the last leaf -1
+  int nextPtr; //-2 if its an inside node, #>0 if its is leaf, -1 if its the last leaf
   int recordsNum; // The amount of current records, either its keys or data
 } BlockMetadata;
 
-/*typedef struct attributesMetadata
+/*typedef struct firstBlock
 {
+  DIBLU$
   int type1; //Type of the first(key) attribute. 1 for int 2 for float 3 for string
   int len1; //Length of the first attribute
   int type2; //Type of the second attribute. 1 for int 2 for float 3 for string
   int len2; //Length of the second attribute
-}attributesMetadata;*/
+}firstBlock;*/
 
 void AM_Init( void );
 
