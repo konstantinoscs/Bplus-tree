@@ -374,7 +374,7 @@ int AM_CloseIndex (int fileDesc) {
 
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
-  /*BF_Block *tmpBlock;
+  BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
 
   void *data = NULL;
@@ -421,7 +421,6 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
-*/
 
   return AME_OK;
 }
@@ -519,5 +518,5 @@ int findRecord(void * data, int fd, void * value1){
     if(++record == records_no)
       return -1;
   }
-  return offset;
+  return record;
 }
