@@ -1,7 +1,8 @@
-#include "AM.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "AM.h"
+#include "file_info.h"
 
 #define CALL_OR_DIE(call)     \
   {                           \
@@ -21,29 +22,7 @@ typedef enum AM_ErrorCode {
 }AM_ErrorCode;
 
 //openFiles holds the names of open files in the appropriate index
-//TODO not char * but some other struct?
-char * openFiles[20];
-
-//insert_file takes the name of a file and inserts it into openFiles
-//if openFiles is fulll then -1 is returned
-int insert_file(char * fileName){
-  for(int i=0; i<20; i++){
-    //if a spot is free put the fileName in it and return
-    //its index
-    if(openFiles[i] == NULL ){
-      openFiles[i] = malloc(strlen(fileName) +1);
-      strcpy(openFiles[i], fileName);
-      return i;
-    }
-  }
-  return -1;
-}
-
-//close_file removes a file with index i from openFiles
-void close_file(int i){
-  free(openFiles[i]);
-  openFiles[i] == NULL;
-}
+file_info * openFiles[20];
 
 /************************************************
 **************Scan*******************************
@@ -140,7 +119,7 @@ int findLeaf(int fd, int key){
   char isLeaf = 0;
 
   //Getting the first block to have access in the first attrr abd the root block id
-  CALL_OR_DIE(BF_GetBlock(fd, 0, tmpBlock));
+  CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, 0, tmpBlock));
   data = BF_Block_GetData(tmpBlock);
 
   data += sizeof(char)*15; //move further from the keyword
@@ -154,7 +133,7 @@ int findLeaf(int fd, int key){
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
-  CALL_OR_DIE(BF_GetBlock(fd, rootId, tmpBlock)); //Get the root block to start searching
+  CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, rootId, tmpBlock)); //Get the root block to start searching
   data = BF_Block_GetData(tmpBlock);
 
   memcpy(&isLeaf, data, sizeof(char));
@@ -195,13 +174,13 @@ int findLeaf(int fd, int key){
       memcpy(&tmpBlockPtr, data, sizeof(int));  //Then get the last child pointer of this block
       CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
-      CALL_OR_DIE(BF_GetBlock(fd, tmpBlockPtr, tmpBlock));  //Get to this block
+      CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, tmpBlockPtr, tmpBlock));  //Get to this block
       data = BF_Block_GetData(tmpBlock);
       memcpy(&isLeaf, data, sizeof(char));  //And check if it is a leaf
     }else{  //Otherwise the loop has stopped because we reached to the right position of the block and now we go to the correct child block
       CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
-      CALL_OR_DIE(BF_GetBlock(fd, tmpBlockPtr, tmpBlock));
+      CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, tmpBlockPtr, tmpBlock));
       data = BF_Block_GetData(tmpBlock);
       memcpy(&isLeaf, data, sizeof(char));
     }
@@ -248,18 +227,20 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   attrMeta.type2 = type2;
   attrMeta.len2 = len2;*/
 
+  int fd;
+  //temporarily insert the file in openFiles
+  int file_index = insert_file(type1, len1, type2, len2);
+  if(file_index == -1)
+    return AME_MAXFILES;
 
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
 
-  int fd;
-  //temporarily insert the file in openFiles
-  int file_index = insert_file(fileName);
-  if(file_index == -1)
-    return AME_MAXFILES;
-
   CALL_OR_DIE(BF_CreateFile(fileName));
   CALL_OR_DIE(BF_OpenFile(fileName, &fd));
+
+  //put the bf level decriptor after you opened
+  insert_bfd(file_index, fd);
 
   void *data;
   char keyWord[15];
@@ -311,7 +292,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   CALL_OR_DIE(BF_GetBlock(fd, 0, tmpBlock));
   data = BF_Block_GetData(tmpBlock);
   data += (sizeof(char)*15 + sizeof(int)*4);
-  printf("GRAFW %d\n", blockNum);
+  //printf("GRAFW %d\n", blockNum);
   memcpy(data, &blockNum, sizeof(int));
   BF_Block_SetDirty(tmpBlock);
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
@@ -319,7 +300,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   BF_Block_Destroy(&tmpBlock);
   CALL_OR_DIE(BF_CloseFile(fd));
   //remove the file from openFiles array
-  //close_file(file_index);
+  close_file(file_index);
 
   return AME_OK;
 }
@@ -332,14 +313,31 @@ int AM_DestroyIndex(char *fileName) {
 
 int AM_OpenIndex (char *fileName) {
   BF_Block *tmpBlock;
-  int fileDesc, type1;
-  BF_Block_Init(&tmpBlock);
-  int file_index = insert_file(fileName);
+  int fileDesc;
+
+  int type1,type2,len1,len2;
+
+  // if (typeChecker(attrType1, attrLength1, &type1, &len1) != AME_OK)
+  // {
+  //   return AME_WRONGARGS;
+  // }
+
+  // if (typeChecker(attrType2, attrLength2, &type2, &len2) != AME_OK)
+  // {
+  //   return AME_WRONGARGS;
+  // }
+
+
+
+  int file_index = insert_file(type1, len1, type2, len2);
   //check if we have reached the maximum number of files
   if(file_index == -1)
     return AME_MAXFILES;
 
+  BF_Block_Init(&tmpBlock);
   CALL_OR_DIE(BF_OpenFile(fileName, &fileDesc));
+
+  insert_bfd(file_index, fileDesc);
 
   char *data = NULL;
   CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
@@ -381,7 +379,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   BF_Block_Init(&tmpBlock);
 
   void *data = NULL;
-  CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
+  CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, 0, tmpBlock));//Getting the first block
   data = BF_Block_GetData(tmpBlock);//and its data
 
   int type1, len1, type2, len2, targetBlockId;
@@ -401,14 +399,14 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
   if (type1 == 1)
   {
-    targetBlockId = findLeaf(fileDesc, *(int *)value1);
+    targetBlockId = findLeaf(openFiles[fileDesc]->bf_desc, *(int *)value1);
   }else{
     //WE HAVE TO MAKE A FIND LEAF FOR STRINGS AND FLOATS
   }
 
   BF_Block_Init(&tmpBlock);
 
-  CALL_OR_DIE(BF_GetBlock(fileDesc, targetBlockId, tmpBlock));//Getting the block that we are supposed to insert the new record
+  CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, targetBlockId, tmpBlock));//Getting the block that we are supposed to insert the new record
   data = BF_Block_GetData(tmpBlock);//and its data
 
   data += (sizeof(char) + sizeof(int)*2);
