@@ -491,5 +491,5 @@ void AM_PrintError(char *errString) {
 }
 
 void AM_Close() {
-
+  delete_files();
 }
