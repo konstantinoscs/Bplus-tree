@@ -498,7 +498,7 @@ int AM_OpenIndex (char *fileName) {
 
 int AM_CloseIndex (int fileDesc) {
   //TODO other stuff?
-
+  CALL_OR_DIE(BF_CloseFile(openFiles[fileDesc]->bf_desc));
   //remove the file from the openFiles array
   close_file(fileDesc);
   return AME_OK;
@@ -506,7 +506,7 @@ int AM_CloseIndex (int fileDesc) {
 
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
-  /*BF_Block *tmpBlock;
+  BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
 
   void *data = NULL;
@@ -553,7 +553,6 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
-*/
 
   return AME_OK;
 }
@@ -623,5 +622,33 @@ void AM_PrintError(char *errString) {
 }
 
 void AM_Close() {
+  BF_Close();
+  delete_files();
+}
 
+///////////////
+//int keyscompare(void * target key, void* current key, int operation, int keyType);
+
+//findRecord finds the next record which attr1 has value1 and returns 
+//its offset from the start of the block
+int findRecord(void * data, int fd, void * value1){
+  int offset = 0;
+  int record = 0;
+  int records_no;
+  int len1 = openFiles[fd]->length1;
+  int len2 = openFiles[fd]->length2;
+  int type = openFiles[fd]->type1;
+
+  //add the first static data to offset
+  offset += 1 + 4 + 4 + 4;
+  //the number of records is 9 bytes after the start of the block
+  memmove(&records_no, data+9, sizeof(int));
+
+  while(!keyscompare(value1, data+offset, EQUAL, type)){
+    offset += len1 + len2;
+    //if went through all the blocks return -1
+    if(++record == records_no)
+      return -1;
+  }
+  return record;
 }
