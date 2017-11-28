@@ -248,27 +248,17 @@ int findLeaf(int fd, void *key){
 
   int keyType, keyLength, rootId, tmpBlockPtr, keysNumber, targetBlockId;
   void *data, *tmpKey;
-  char isLeaf = 0;
+  bool isLeaf = 0;
 
-  //Getting the first block to have access in the first attrr abd the root block id
-  CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, 0, tmpBlock));
-  data = BF_Block_GetData(tmpBlock);
-
-  data += sizeof(char)*15; 
-
-  //Get the type and the length of this file's key
+  //Get the type and the length of this file's key and the root
   keyType = openFiles[fd]->type1;
   keyLength = openFiles[fd]->length1;
-
-  data += (sizeof(char)*15 + sizeof(int)*3);  //Move further from the keyword and the attr1 and attr2 types and lengths
-  memcpy(&rootId, data,sizeof(int));
-
-  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+  rootId = openFiles[fd]->root_id;
 
   CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, rootId, tmpBlock)); //Get the root block to start searching
   data = BF_Block_GetData(tmpBlock);
 
-  memcpy(&isLeaf, data, sizeof(char));
+  memcpy(&isLeaf, data, sizeof(bool));
 
   if (isLeaf == 1) //If the root is a leaf we are on the only leaf so the key should be here
   {
@@ -308,17 +298,62 @@ int findLeaf(int fd, void *key){
 
       CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, tmpBlockPtr, tmpBlock));  //Get to this block
       data = BF_Block_GetData(tmpBlock);
-      memcpy(&isLeaf, data, sizeof(char));  //And check if it is a leaf
+      memcpy(&isLeaf, data, sizeof(bool));  //And check if it is a leaf
     }else{  //Otherwise the loop has stopped because we reached to the right position of the block and now we go to the correct child block
       CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
       CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, tmpBlockPtr, tmpBlock));
       data = BF_Block_GetData(tmpBlock);
-      memcpy(&isLeaf, data, sizeof(char));
+      memcpy(&isLeaf, data, sizeof(bool));
     }
   }
 
   //After all this loops we are on the block that our key exists or it should at least
+  data += sizeof(char); //So move to the block id the data pointer
+  memcpy(&targetBlockId, data, sizeof(int));  //Get the block id
+
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+  BF_Block_Destroy(&tmpBlock);
+
+  return targetBlockId; //And return it
+}
+
+int findMostLeftLeaf(int fd){
+  BF_Block *tmpBlock;
+  BF_Block_Init(&tmpBlock);
+
+  int rootId, tmpBlockPtr, targetBlockId;
+  void *data;
+  bool isLeaf = 0;
+
+  rootId = openFiles[fd]->root_id;
+
+  CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, rootId, tmpBlock)); //Get the root block to start searching
+  data = BF_Block_GetData(tmpBlock);
+
+  memcpy(&isLeaf, data, sizeof(bool));
+
+  if (isLeaf == 1) //If the root is a leaf we are on the only leaf so the key should be here
+  {
+    CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+    BF_Block_Destroy(&tmpBlock);
+    return rootId;
+  }
+
+  while( isLeaf == 0){  //Everytime we get in a new block to search that is not a leaf
+
+    data += (sizeof(char) + sizeof(int)*3);  //Move the data pointer over the isLeaf byte,the block id, the next block pointer and the records num they are useless for now
+
+    memcpy(&tmpBlockPtr, data, sizeof(int));  // Get the first pointer to child block that exist in this block
+
+    CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+
+    CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, tmpBlockPtr, tmpBlock));  //Get to the child block
+    data = BF_Block_GetData(tmpBlock); 
+    memcpy(&isLeaf, data, sizeof(bool));
+  }
+
+  //After all this loops we are on the leaf block that is the most left
   data += sizeof(char); //So move to the block id the data pointer
   memcpy(&targetBlockId, data, sizeof(int));  //Get the block id
 
@@ -534,7 +569,7 @@ int AM_CloseIndex (int fileDesc) {
 
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
-  BF_Block *tmpBlock;
+/*  BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
 
   void *data = NULL;
@@ -580,7 +615,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
-  BF_Block_Destroy(&tmpBlock);
+  BF_Block_Destroy(&tmpBlock);*/
 
   return AME_OK;
 }

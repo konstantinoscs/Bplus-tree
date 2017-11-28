@@ -40,6 +40,7 @@ typedef struct BlockMetadata
   int len1; //Length of the first attribute
   int type2; //Type of the second attribute. 1 for int 2 for float 3 for string
   int len2; //Length of the second attribute
+  int rootID //The block Id of the root
 }firstBlock;*/
 
 void AM_Init( void );
