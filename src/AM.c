@@ -110,25 +110,157 @@ int typeChecker(char attrType, int attrLength, int *type, int *len){
 **************Insert*******************************
 *************************************************/
 
-int findLeaf(int fd, int key){
+bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType){
+  switch (operation){
+    case EQUAL:
+      switch (keyType){
+        case 1:
+          if (*(int *)targetKey == *(int *)tmpKey)
+          {
+            return 1;
+          }
+          return 0;
+        case 2:
+          if (*(float *)targetKey == *(float *)tmpKey)
+          {
+            return 1;
+          }
+          return 0;
+        case 3:
+          if (!strcmp((char *)targetKey, (char *)tmpKey))
+          {
+            return 1;
+          }
+          return 0;
+      }
+    case NOT_EQUAL:
+      switch (keyType){
+        case 1:
+          if (*(int *)targetKey != *(int *)tmpKey)
+          {
+            return 1;
+          }
+          return 0;
+        case 2:
+          if (*(float *)targetKey != *(float *)tmpKey)
+          {
+            return 1;
+          }
+          return 0;
+        case 3:
+          if (strcmp((char *)targetKey, (char *)tmpKey))
+          {
+            return 1;
+          }
+          return 0;
+      }
+    case LESS_THAN:
+      switch (keyType){
+        case 1:
+          if (*(int *)targetKey < *(int *)tmpKey)
+          {
+            return 1;
+          }
+          return 0;
+        case 2:
+          if (*(float *)targetKey < *(float *)tmpKey)
+          {
+            return 1;
+          }
+          return 0;
+        case 3:
+          if (strcmp((char *)targetKey, (char *)tmpKey) < 0)
+          {
+            return 1;
+          }
+          return 0;
+      }
+    case GREATER_THAN:
+      switch (keyType){
+        case 1:
+          if (*(int *)targetKey > *(int *)tmpKey)
+          {
+            return 1;
+          }
+          return 0;
+        case 2:
+          if (*(float *)targetKey > *(float *)tmpKey)
+          {
+            return 1;
+          }
+          return 0;
+        case 3:
+          if (strcmp((char *)targetKey, (char *)tmpKey) > 0)
+          {
+            return 1;
+          }
+          return 0;
+      }
+    case LESS_THAN_OR_EQUAL:
+      switch (keyType){
+        case 1:
+          if (*(int *)targetKey <= *(int *)tmpKey)
+          {
+            return 1;
+          }
+          return 0;
+        case 2:
+          if (*(float *)targetKey <= *(float *)tmpKey)
+          {
+            return 1;
+          }
+          return 0;
+        case 3:
+          if (strcmp((char *)targetKey, (char *)tmpKey) <= 0)
+          {
+            return 1;
+          }
+          return 0;
+      }
+    case GREATER_THAN_OR_EQUAL:
+      switch (keyType){
+        case 1:
+          if (*(int *)targetKey >= *(int *)tmpKey)
+          {
+            return 1;
+          }
+          return 0;
+        case 2:
+          if (*(float *)targetKey >= *(float *)tmpKey)
+          {
+            return 1;
+          }
+          return 0;
+        case 3:
+          if (strcmp((char *)targetKey, (char *)tmpKey) >= 0)
+          {
+            return 1;
+          }
+          return 0;
+      }
+  }
+}
+
+
+int findLeaf(int fd, void *key){
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
 
-  int keyType, keyLength, rootId, tmpBlockPtr, tmpKey, keysNumber, targetBlockId;
-  void *data;
+  int keyType, keyLength, rootId, tmpBlockPtr, keysNumber, targetBlockId;
+  void *data, *tmpKey;
   char isLeaf = 0;
 
   //Getting the first block to have access in the first attrr abd the root block id
   CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, 0, tmpBlock));
   data = BF_Block_GetData(tmpBlock);
 
-  data += sizeof(char)*15; //move further from the keyword
+  data += sizeof(char)*15; 
 
-  //Get the type and the length of this file's key and its root Id
-  memcpy(&keyType, data, sizeof(int));
-  data += sizeof(int);
-  memcpy(&keyLength, data, sizeof(int));
-  data += (sizeof(int)*3);
+  //Get the type and the length of this file's key
+  keyType = openFiles[fd]->type1;
+  keyLength = openFiles[fd]->length1;
+
+  data += (sizeof(char)*15 + sizeof(int)*3);  //Move further from the keyword and the attr1 and attr2 types and lengths
   memcpy(&rootId, data,sizeof(int));
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
@@ -155,20 +287,20 @@ int findLeaf(int fd, int key){
     data += sizeof(int);
     memcpy(&tmpBlockPtr, data, sizeof(int));  // Get the first pointer to child block that exist in this block
     data += sizeof(int);
-    memcpy(&tmpKey, data, sizeof(int)); //Get the value of the first key in this block
-    data += sizeof(int);
+    memcpy(tmpKey, data, openFiles[fd]->length1); //Get the value of the first key in this block
+    data += openFiles[fd]->length1;
     currKey++;  //Increase the index pointer
 
-    while(key >= tmpKey && currKey < keysNumber){ //while the key that we look for is bigger than the key that we have now
+    while(keysComparer(key, tmpKey, GREATER_THAN_OR_EQUAL, keyType) && currKey < keysNumber){ //while the key that we look for is bigger than the key that we have now
       //and the index number is smaller than the amount of keys in this block (so we are not on the last key) keep traversing
       memcpy(&tmpBlockPtr, data, sizeof(int));  //get the pointer to the child block that is before the new tmpKey
       data += sizeof(int);
-      memcpy(&tmpKey, data, sizeof(int)); //get the new tmp key
+      memcpy(tmpKey, data, sizeof(int)); //get the new tmp key
       data += sizeof(int);
       currKey++;
     }
 
-    if (key >= tmpKey)  //if the loop stopped because we reached the last key on this block but still the key
+    if (keysComparer(key, tmpKey, GREATER_THAN_OR_EQUAL, keyType))  //if the loop stopped because we reached the last key on this block but still the key
     //that we are looking for is bigger than the last key
     {
       memcpy(&tmpBlockPtr, data, sizeof(int));  //Then get the last child pointer of this block
