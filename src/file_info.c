@@ -22,6 +22,10 @@ void insert_bfd(int fileDesc, int bf_desc){
   openFiles[fileDesc]->bf_desc = bf_desc;
 }
 
+void insert_root(int fileDesc, int root_id){
+	openFiles[fileDesc]->root_id = root_id;
+}
+
 //close_file removes a file with index i from openFiles
 void close_file(int i){
   free(openFiles[i]);
