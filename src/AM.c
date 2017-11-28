@@ -23,21 +23,37 @@ typedef enum AM_ErrorCode {
 
 //openFiles holds the names of open files in the appropriate index
 //TODO not char * but some other struct?
-char * openFiles[20];
+file_info * openFiles[20];
+
+//file_info keeps all the necessary info about every open file
+typdef struct file_info{
+  int bf_desc;    //the descriptor of BF level
+  int type1;
+  int length1;
+  int type2;
+  int length2;
+}file_info;
 
 //insert_file takes the name of a file and inserts it into openFiles
 //if openFiles is fulll then -1 is returned
-int insert_file(char * fileName){
+int insert_file(int type1, int length1, int type2, int length2){
   for(int i=0; i<20; i++){
-    //if a spot is free put the fileName in it and return
+    //if a spot is free put the info in it and return
     //its index
     if(openFiles[i] == NULL ){
-      openFiles[i] = malloc(strlen(fileName) +1);
-      strcpy(openFiles[i], fileName);
+      openFiles[i] = malloc(sizeof(file_info));
+      openFiles[i]->type1 = type1;
+      openFiles[i]->length1 = length1;
+      openFiles[i]->type2 = type2;
+      openFiles[i]->length2 = length2;
       return i;
     }
   }
   return -1;
+}
+
+void insert_bfd(int fileDesc, int bf_desc){
+  openFiles[fileDesc]->bf_desc = bf_desc;
 }
 
 //close_file removes a file with index i from openFiles
@@ -248,18 +264,20 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   attrMeta.type2 = type2;
   attrMeta.len2 = len2;*/
 
+  int fd;
+  //temporarily insert the file in openFiles
+  int file_index = insert_file(type1, len1, type2, len2);
+  if(file_index == -1)
+    return AME_MAXFILES;
 
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
 
-  int fd;
-  //temporarily insert the file in openFiles
-  int file_index = insert_file(fileName);
-  if(file_index == -1)
-    return AME_MAXFILES;
-
   CALL_OR_DIE(BF_CreateFile(fileName));
   CALL_OR_DIE(BF_OpenFile(fileName, &fd));
+
+  //put the bf level decriptor after you opened
+  insert_bfd(fd);
 
   void *data;
   char keyWord[15];
@@ -319,7 +337,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   BF_Block_Destroy(&tmpBlock);
   CALL_OR_DIE(BF_CloseFile(fd));
   //remove the file from openFiles array
-  //close_file(file_index);
+  close_file(file_index);
 
   return AME_OK;
 }
