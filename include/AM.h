@@ -5,7 +5,7 @@
 
 extern int AM_errno;
 
-//typedef int bool;
+typedef int bool;
 
 #define AME_OK 0
 #define AME_EOF -1
