@@ -13,6 +13,7 @@ typedef char bool;
 #define AME_EOF -1
 #define AME_WRONGARGS -2
 #define AME_MAXFILES -3
+#define AME_RECORD_NOT_FOUND -4 //while scanning the record you asked for was not found by its key
 
 #define EQUAL 1
 #define NOT_EQUAL 2
