@@ -313,33 +313,13 @@ int AM_DestroyIndex(char *fileName) {
 
 int AM_OpenIndex (char *fileName) {
   BF_Block *tmpBlock;
-  int fileDesc;
-
-  int type1,type2,len1,len2;
-
-  // if (typeChecker(attrType1, attrLength1, &type1, &len1) != AME_OK)
-  // {
-  //   return AME_WRONGARGS;
-  // }
-
-  // if (typeChecker(attrType2, attrLength2, &type2, &len2) != AME_OK)
-  // {
-  //   return AME_WRONGARGS;
-  // }
-
-
-  
-  int file_index = insert_file(type1, len1, type2, len2);
-  //check if we have reached the maximum number of files
-  if(file_index == -1)
-    return AME_MAXFILES;
-
   BF_Block_Init(&tmpBlock);
+
+  int type1,type2,len1,len2, fileDesc;
+  char *data = NULL;
+
   CALL_OR_DIE(BF_OpenFile(fileName, &fileDesc));
 
-  insert_bfd(file_index, fileDesc);
-
-  char *data = NULL;
   CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
   data = BF_Block_GetData(tmpBlock);//and its data
 
@@ -349,6 +329,27 @@ int AM_OpenIndex (char *fileName) {
     exit(-1);
   }
 
+  data += sizeof(char)*15; //skip the diblus keyword
+  //Getting the attr1 and attr2 type and length from the metadata block
+  memcpy(&type1, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&len1, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&type2, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&len2, data, sizeof(int));
+
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+  BF_Block_Destroy(&tmpBlock);
+
+  
+  int file_index = insert_file(type1, len1, type2, len2);
+  //check if we have reached the maximum number of files
+  if(file_index == -1)
+    return AME_MAXFILES;
+
+  insert_bfd(file_index, fileDesc);
+
   /*data += sizeof(char)*15;
   int type, len;
   memcpy(&type, data, sizeof(int));
@@ -356,9 +357,6 @@ int AM_OpenIndex (char *fileName) {
   memcpy(&len, data, sizeof(int));
 
   printf("%d %d\n", type, len);*/
-
-  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
-  BF_Block_Destroy(&tmpBlock);
 
   //return the file index
   return file_index;
