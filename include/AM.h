@@ -30,13 +30,14 @@ typedef struct BlockMetadata
   int recordsNum; // The amount of current records, either its keys or data
 } BlockMetadata;
 
-/*typedef struct attributesMetadata
+/*typedef struct firstBlock
 {
+  DIBLU$
   int type1; //Type of the first(key) attribute. 1 for int 2 for float 3 for string
   int len1; //Length of the first attribute
   int type2; //Type of the second attribute. 1 for int 2 for float 3 for string
   int len2; //Length of the second attribute
-}attributesMetadata;*/
+}firstBlock;*/
 
 void AM_Init( void );
 

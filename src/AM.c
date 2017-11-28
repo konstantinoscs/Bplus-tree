@@ -362,7 +362,6 @@ int AM_OpenIndex (char *fileName) {
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
 
-  findLeaf(fileDesc,1);
   //return the file index
   return file_index;
 }
@@ -378,6 +377,55 @@ int AM_CloseIndex (int fileDesc) {
 
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
+  BF_Block *tmpBlock;
+  BF_Block_Init(&tmpBlock);
+  
+  void *data = NULL;
+  CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
+  data = BF_Block_GetData(tmpBlock);//and its data
+
+  int type1, len1, type2, len2, targetBlockId;
+
+  data += sizeof(char)*15; //skip the diblus keyword
+  //Getting the attr1 and attr2 type and length from the metadata block
+  memcpy(&type1, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&len1, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&type2, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&len2, data, sizeof(int));
+
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+  BF_Block_Destroy(&tmpBlock);
+
+  if (type1 == 1)
+  {
+    targetBlockId = findLeaf(fileDesc, *(int *)value1);
+  }else{
+    //WE HAVE TO MAKE A FIND LEAF FOR STRINGS AND FLOATS
+  }
+
+  BF_Block_Init(&tmpBlock);
+  
+  CALL_OR_DIE(BF_GetBlock(fileDesc, targetBlockId, tmpBlock));//Getting the block that we are supposed to insert the new record
+  data = BF_Block_GetData(tmpBlock);//and its data
+
+  data += (sizeof(char) + sizeof(int)*2);
+
+  int currRecords, maxRecords;
+
+  memcpy(&currRecords, data, sizeof(int));
+
+  maxRecords = (BF_BLOCK_SIZE - (sizeof(char) + sizeof(int)*3))/(len1 + len2);
+
+  //An oxi gemato apla valto sto telos afou traversareis an gemato parta arxidia mou kai kanta soupa
+
+
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+  BF_Block_Destroy(&tmpBlock);
+
+
   return AME_OK;
 }
 
