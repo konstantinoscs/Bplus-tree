@@ -27,3 +27,8 @@ void close_file(int i){
   free(openFiles[i]);
   openFiles[i] == NULL;
 }
+
+void delete_files(){
+	for(int i=0; i<20; i++)
+		close_file(i);
+}

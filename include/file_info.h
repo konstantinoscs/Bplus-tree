@@ -23,4 +23,6 @@ void insert_bfd(int fileDesc, int bf_desc);
 
 void close_file(int i);
 
+void delete_files();
+
 #endif
