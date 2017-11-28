@@ -1,8 +1,10 @@
-#include "AM.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+
+#include "AM.h"
+#include "file_info.h"
 
 #define CALL_OR_DIE(call)     \
   {                           \
@@ -22,45 +24,7 @@ typedef enum AM_ErrorCode {
 }AM_ErrorCode;
 
 //openFiles holds the names of open files in the appropriate index
-//TODO not char * but some other struct?
 file_info * openFiles[20];
-
-//file_info keeps all the necessary info about every open file
-typdef struct file_info{
-  int bf_desc;    //the descriptor of BF level
-  int type1;
-  int length1;
-  int type2;
-  int length2;
-}file_info;
-
-//insert_file takes the name of a file and inserts it into openFiles
-//if openFiles is fulll then -1 is returned
-int insert_file(int type1, int length1, int type2, int length2){
-  for(int i=0; i<20; i++){
-    //if a spot is free put the info in it and return
-    //its index
-    if(openFiles[i] == NULL ){
-      openFiles[i] = malloc(sizeof(file_info));
-      openFiles[i]->type1 = type1;
-      openFiles[i]->length1 = length1;
-      openFiles[i]->type2 = type2;
-      openFiles[i]->length2 = length2;
-      return i;
-    }
-  }
-  return -1;
-}
-
-void insert_bfd(int fileDesc, int bf_desc){
-  openFiles[fileDesc]->bf_desc = bf_desc;
-}
-
-//close_file removes a file with index i from openFiles
-void close_file(int i){
-  free(openFiles[i]);
-  openFiles[i] == NULL;
-}
 
 /************************************************
 **************Scan*******************************
@@ -351,13 +315,30 @@ int AM_DestroyIndex(char *fileName) {
 int AM_OpenIndex (char *fileName) {
   BF_Block *tmpBlock;
   int fileDesc, type1;
-  BF_Block_Init(&tmpBlock);
-  int file_index = insert_file(fileName);
+
+  int type1,type2,len1,len2;
+
+  if (typeChecker(attrType1, attrLength1, &type1, &len1) != AME_OK)
+  {
+    return AME_WRONGARGS;
+  }
+
+  if (typeChecker(attrType2, attrLength2, &type2, &len2) != AME_OK)
+  {
+    return AME_WRONGARGS;
+  }
+
+
+  
+  int file_index = insert_file(type1, len1, type2, len2);
   //check if we have reached the maximum number of files
   if(file_index == -1)
     return AME_MAXFILES;
 
+  BF_Block_Init(&tmpBlock);
   CALL_OR_DIE(BF_OpenFile(fileName, &fileDesc));
+
+  insert_bfd(fileDesc);
 
   char *data = NULL;
   CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
