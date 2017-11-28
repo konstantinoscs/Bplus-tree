@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
 #include "AM.h"
 #include "file_info.h"
 
@@ -35,6 +34,7 @@ typedef struct Scan {
 	int record_num;		//last record that was checked
 	int op;			//the operation
 	void *value;			//the target value
+  bool ScanIsOver;
 }Scan;
 
 #define MAX_SCANS 20
@@ -318,6 +318,7 @@ int AM_OpenIndex (char *fileName) {
   int type1,type2,len1,len2, fileDesc;
   char *data = NULL;
 
+
   CALL_OR_DIE(BF_OpenFile(fileName, &fileDesc));
 
   CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
@@ -373,7 +374,7 @@ int AM_CloseIndex (int fileDesc) {
 
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
-/*  BF_Block *tmpBlock;
+  /*BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
 
   void *data = NULL;
@@ -419,7 +420,8 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
-  BF_Block_Destroy(&tmpBlock);*/
+  BF_Block_Destroy(&tmpBlock);
+*/
 
   return AME_OK;
 }
@@ -432,6 +434,7 @@ int AM_OpenIndexScan(int fileDesc, int op, void *value) {
 	scan->value = value;
 	scan->block_num = -1;
 	scan->record_num = -1;
+  scan->ScanIsOver = false;
 
 	return openScansInsert(scan);*/
   return AME_OK;
@@ -439,9 +442,44 @@ int AM_OpenIndexScan(int fileDesc, int op, void *value) {
 
 
 void *AM_FindNextEntry(int scanDesc) {
+  /*scan = openScans[scanDesc];
+  file_info file = openFiles[scan->fileDesc];
+  int next_block_num;
 
+  //get the next_block_num
+  int block_num = scan->block_num;
+  if(block_num == -1)
+    //if there is no block yet (scan->block_num=-1)
+    next_block_num = 0;
+  else{
+    //get next_block_num from current block
+    BF_Block* block;
+    BF_Block_Init(&block);
+    BF_GetBlock(scan->fileDesc,scan->block_num,block);
+    char* data = BF_Block_GetData(block);
+    int offset = sizeof(char)+sizeof(int);
+    memcpy(&next_block_num,data+offset,sizeof(int));
+  }
+
+  //get next block
+  if(next_block_num == -1){ //make sure there is a next block
+    scan->ScanIsOver = true;
+    AM_errno = AME_EOF;
+    return NULL;
+  }
+  BF_Block* next_block;
+  BF_GetBlock(scan->fileDesc,next_block_num,next_block);
+  char* data = BF_Block_GetData(next_block);
+
+  if(nextRecord == NULL)
+    return NULL;
+
+  switch(scan.op){
+    case EQUAL:
+
+                if()
+  }*/
 }
-
 
 int AM_CloseIndexScan(int scanDesc) {
   return AME_OK;
