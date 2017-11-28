@@ -21,7 +21,7 @@ typedef enum AM_ErrorCode {
   OPEN_SCANS_FULL
 }AM_ErrorCode;
 
-//openFiles holds the names of open files in the appropriate index
+//openFiles holds the info of open files in the appropriate index
 file_info * openFiles[20];
 
 /************************************************
@@ -388,7 +388,7 @@ int findRecord(void * data, int fd, void * value1){
     if(++record == records_no)
       return -1;
   }
-  return record;
+  return record-1;
 }
 
 /***************************************************
