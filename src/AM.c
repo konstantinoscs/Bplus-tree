@@ -203,11 +203,6 @@ int findLeaf(int fd, int key){
 int AM_errno = AME_OK;
 
 void AM_Init() {
-  for(int i=0; i<20; i++){
-    if(openFiles[i] == NULL){
-      printf("%d is null \n", i);
-    }
-  }
   BF_Init(MRU);
 	return;
 }
@@ -496,5 +491,6 @@ void AM_PrintError(char *errString) {
 }
 
 void AM_Close() {
+  BF_Close();
   delete_files();
 }
