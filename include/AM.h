@@ -5,7 +5,7 @@
 
 extern int AM_errno;
 
-//typedef int bool;
+typedef int bool;
 
 #define AME_OK 0
 #define AME_EOF -1
@@ -18,6 +18,7 @@ extern int AM_errno;
 #define GREATER_THAN 4
 #define LESS_THAN_OR_EQUAL 5
 #define GREATER_THAN_OR_EQUAL 6
+
 
 #include "bf.h"
 #include "defn.h"
