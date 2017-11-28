@@ -5,12 +5,14 @@
 
 extern int AM_errno;
 
-typedef int bool;
+typedef char bool;
+#define true 1
+#define false 0
 
 #define AME_OK 0
 #define AME_EOF -1
 #define AME_WRONGARGS -2
-#define AME_MAXFILES -3;
+#define AME_MAXFILES -3
 
 #define EQUAL 1
 #define NOT_EQUAL 2
@@ -24,7 +26,7 @@ typedef int bool;
 
 typedef struct BlockMetadata
 {
-  bool isLeaf; //0 if its an inside node 1 if it is leaf
+  bool isLeaf; //0 if its an inside node 1 if it is leaf (sizeof(char))
   int blockId; //The unique id of this block
   int nextPtr; //-2 if its an inside node, #>0 if its is leaf, -1 if its the last leaf
   int recordsNum; // The amount of current records, either its keys or data
