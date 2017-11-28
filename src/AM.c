@@ -140,7 +140,7 @@ int findLeaf(int fd, int key){
   char isLeaf = 0;
 
   //Getting the first block to have access in the first attrr abd the root block id
-  CALL_OR_DIE(BF_GetBlock(fd, 0, tmpBlock));
+  CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, 0, tmpBlock));
   data = BF_Block_GetData(tmpBlock);
 
   data += sizeof(char)*15; //move further from the keyword
@@ -154,7 +154,7 @@ int findLeaf(int fd, int key){
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
-  CALL_OR_DIE(BF_GetBlock(fd, rootId, tmpBlock)); //Get the root block to start searching
+  CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, rootId, tmpBlock)); //Get the root block to start searching
   data = BF_Block_GetData(tmpBlock);
 
   memcpy(&isLeaf, data, sizeof(char));
@@ -195,13 +195,13 @@ int findLeaf(int fd, int key){
       memcpy(&tmpBlockPtr, data, sizeof(int));  //Then get the last child pointer of this block
       CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
-      CALL_OR_DIE(BF_GetBlock(fd, tmpBlockPtr, tmpBlock));  //Get to this block
+      CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, tmpBlockPtr, tmpBlock));  //Get to this block
       data = BF_Block_GetData(tmpBlock);
       memcpy(&isLeaf, data, sizeof(char));  //And check if it is a leaf
     }else{  //Otherwise the loop has stopped because we reached to the right position of the block and now we go to the correct child block
       CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
-      CALL_OR_DIE(BF_GetBlock(fd, tmpBlockPtr, tmpBlock));
+      CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, tmpBlockPtr, tmpBlock));
       data = BF_Block_GetData(tmpBlock);
       memcpy(&isLeaf, data, sizeof(char));
     }
@@ -311,7 +311,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   CALL_OR_DIE(BF_GetBlock(fd, 0, tmpBlock));
   data = BF_Block_GetData(tmpBlock);
   data += (sizeof(char)*15 + sizeof(int)*4);
-  printf("GRAFW %d\n", blockNum);
+  //printf("GRAFW %d\n", blockNum);
   memcpy(data, &blockNum, sizeof(int));
   BF_Block_SetDirty(tmpBlock);
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
@@ -377,11 +377,11 @@ int AM_CloseIndex (int fileDesc) {
 
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
-  BF_Block *tmpBlock;
+/*  BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
 
   void *data = NULL;
-  CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
+  CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, 0, tmpBlock));//Getting the first block
   data = BF_Block_GetData(tmpBlock);//and its data
 
   int type1, len1, type2, len2, targetBlockId;
@@ -401,14 +401,14 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
   if (type1 == 1)
   {
-    targetBlockId = findLeaf(fileDesc, *(int *)value1);
+    targetBlockId = findLeaf(openFiles[fileDesc]->bf_desc, *(int *)value1);
   }else{
     //WE HAVE TO MAKE A FIND LEAF FOR STRINGS AND FLOATS
   }
 
   BF_Block_Init(&tmpBlock);
 
-  CALL_OR_DIE(BF_GetBlock(fileDesc, targetBlockId, tmpBlock));//Getting the block that we are supposed to insert the new record
+  CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, targetBlockId, tmpBlock));//Getting the block that we are supposed to insert the new record
   data = BF_Block_GetData(tmpBlock);//and its data
 
   data += (sizeof(char) + sizeof(int)*2);
@@ -423,8 +423,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
-  BF_Block_Destroy(&tmpBlock);
-
+  BF_Block_Destroy(&tmpBlock);*/
 
   return AME_OK;
 }
