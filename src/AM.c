@@ -502,21 +502,21 @@ void AM_Close() {
 //its offset from the start of the block
 int findRecord(void * data, int fd, void * value1){
   int offset = 0;
-  int block = 0;
-  int blocks_no;
+  int record = 0;
+  int records_no;
   int len1 = openFiles[fd]->length1;
   int len2 = openFiles[fd]->length2;
   int type = openFiles[fd]->type1;
 
   //add the first static data to offset
   offset += 1 + 4 + 4 + 4;
-
-  memmove(&blocks_no, data+9, sizeof(int));
+  //the number of records is 9 bytes after the start of the block
+  memmove(&records_no, data+9, sizeof(int));
 
   while(!keyscompare(value1, data+offset, EQUAL, type)){
     offset += len1 + len2;
     //if went through all the blocks return -1
-    if(++block == blocks_no)
+    if(++record == records_no)
       return -1;
   }
   return offset;
