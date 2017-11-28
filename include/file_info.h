@@ -10,6 +10,7 @@ typedef struct file_info{
   int length1;
   int type2;
   int length2;
+  int root_id;
 }file_info;
 
 extern file_info * openFiles[20];
@@ -21,6 +22,10 @@ int insert_file(int type1, int length1, int type2, int length2);
 //insert_bdf inserts a file_desc file_info
 void insert_bfd(int fileDesc, int bf_desc);
 
+void insert_root(int fileDesc, int root_id);
+
 void close_file(int i);
+
+void delete_files();
 
 #endif
