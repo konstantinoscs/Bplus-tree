@@ -26,6 +26,13 @@ int stack_pop(Stack* stack){
   return stack->keys[--elems];
 }
 
+//same as above but don't decrement elems
+int get_top(Stack* stack){
+  if(!stack->elems)
+    return -1;
+  return stack->keys[elems-1];
+}
+
 int destroy_stack(Stack * stack){
   free(Stack);
 }
