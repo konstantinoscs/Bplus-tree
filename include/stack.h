@@ -2,22 +2,22 @@
 #define STACK_H
 
 typedef struct Stack{
-  void * key;
-  int key_size;
   int size;
-}stack;
+  int * keys;
+  int elems;
+}Stack;
 
-//takes a stack pointer (not malloc'd) and the size of the key
-//and creates the stack
-int create_stack(stack * Stack, int key_size);
+//creates a stack and returns a pointer to it
+Stack * create_stack();
 
 //pushes value in the stack
-int stack_push(void * value);
+int stack_push(Stack** stack, int value);
 
-//takes a malloc'd value and pops in it
-int stack_pop(void * value);
+//pops from stack
+//returns -1 if stack is empty
+int stack_pop(Stack* stack){
 
 //takes a stack pointer and destroys the corresponding stack
-int destroy_stack(stack * Stack);
+int destroy_stack(Stack * stack);
 
 #endif
