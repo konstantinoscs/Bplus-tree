@@ -464,6 +464,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   int blockNum, nextPtr, recordsNum;
   CALL_OR_DIE(BF_GetBlockCounter(fd, &blockNum));
   blockNum--;
+  insert_root(file_index, blockNum);
 
   data = BF_Block_GetData(tmpBlock);
 
@@ -511,7 +512,7 @@ int AM_OpenIndex (char *fileName) {
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
 
-  int type1,type2,len1,len2, fileDesc;
+  int type1,type2,len1,len2, fileDesc, rootId;
   char *data = NULL;
 
 
@@ -535,6 +536,8 @@ int AM_OpenIndex (char *fileName) {
   memcpy(&type2, data, sizeof(int));
   data += sizeof(int);
   memcpy(&len2, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&rootId, data, sizeof(int));
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
@@ -546,6 +549,7 @@ int AM_OpenIndex (char *fileName) {
     return AME_MAXFILES;
 
   insert_bfd(file_index, fileDesc);
+  insert_root(file_index, rootId);
 
   /*data += sizeof(char)*15;
   int type, len;
@@ -570,37 +574,23 @@ int AM_CloseIndex (int fileDesc) {
 
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
-/*  BF_Block *tmpBlock;
-  BF_Block_Init(&tmpBlock);
 
   void *data = NULL;
-  CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, 0, tmpBlock));//Getting the first block
-  data = BF_Block_GetData(tmpBlock);//and its data
 
   int type1, len1, type2, len2, targetBlockId;
+  int offset = 0;
 
-  data += sizeof(char)*15; //skip the diblus keyword
-  //Getting the attr1 and attr2 type and length from the metadata block
-  memcpy(&type1, data, sizeof(int));
-  data += sizeof(int);
-  memcpy(&len1, data, sizeof(int));
-  data += sizeof(int);
-  memcpy(&type2, data, sizeof(int));
-  data += sizeof(int);
-  memcpy(&len2, data, sizeof(int));
+  //Getting the attr1 and attr2 type and length
+  type1 = openFiles[fileDesc]->type1;
+  len1 = openFiles[fileDesc]->length1;
 
-  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
-  BF_Block_Destroy(&tmpBlock);
+  type2 = openFiles[fileDesc]->type2;
+  len2 = openFiles[fileDesc]->length2;
 
-  if (type1 == 1)
-  {
-    targetBlockId = findLeaf(openFiles[fileDesc]->bf_desc, value1);
-  }else{
-    //WE HAVE TO MAKE A FIND LEAF FOR STRINGS AND FLOATS
-  }
+  targetBlockId = findLeaf(openFiles[fileDesc]->bf_desc, value1); //Find the leaf that this value is supposed to be inserted
 
+  BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
-
   CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, targetBlockId, tmpBlock));//Getting the block that we are supposed to insert the new record
   data = BF_Block_GetData(tmpBlock);//and its data
 
@@ -612,11 +602,24 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
   maxRecords = (BF_BLOCK_SIZE - (sizeof(char) + sizeof(int)*3))/(len1 + len2);
 
-  //An oxi gemato apla valto sto telos afou traversareis an gemato parta arxidia mou kai kanta soupa
+  if (currRecords < maxRecords)
+  {
+    offset = (sizeof(int) + currRecords*(len1 + len2));
+    memcpy(data + offset, value1, len1);
+    offset += len1;
+    memcpy(data + offset, value2, len2);
+    currRecords++;
+    memcpy(data, &currRecords, sizeof(int));
+  }else{
+    
+    //An einai gemato tote prepei na to spasoume se 2 nea blok kai na mirasoume tis times se afta. me kapion tropo na pame ston apo panw komvo tou kai
+    //na tsekaroume ean einai gematos kai aftos. An oxi vazoume to neo klidi ston epanw kai ola kala an einai gematos pali ton spame kai kanoume tin proigoumeni
+    //diadikasia apo tin arxi.
+  }
 
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
-  BF_Block_Destroy(&tmpBlock);*/
+  BF_Block_Destroy(&tmpBlock);
 
   return AME_OK;
 }
