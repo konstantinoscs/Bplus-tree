@@ -609,13 +609,14 @@ int AM_CloseIndex (int fileDesc) {
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
-  void *data = NULL;
+  void *data1 = NULL;
+  void *data2 = NULL;
 
-  int type1, len1, type2, len2, targetBlockId, recordIndex;
+  int type1, len1, type2, len2, targetBlockId, recordIndex, nextPtr;
   int offset = 0;
   int currRecords, maxRecords;
-  Stack * stack;
-  create_stack(&stack);
+  Stack *nodesPath;
+  create_stack(&nodesPath);
 
   //Getting the attr1 and attr2 type and length
   type1 = openFiles[fileDesc]->type1;
@@ -629,26 +630,54 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
   CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, targetBlockId, tmpBlock));//Getting the block that we are supposed to insert the new record
-  data = BF_Block_GetData(tmpBlock);//and its data
+  data1 = BF_Block_GetData(tmpBlock);//and its data
 
-  offset = (sizeof(char) + sizeof(int)*2);
+  offset = (sizeof(char) + sizeof(int));
 
-  memcpy(&currRecords, data + offset, sizeof(int)); //Getting the amount of records that exist in this block
+  memcpy(&nextPtr, data1 + offset, sizeof(int));// Getting the nextPtr of the targed block
+  offset += sizeof(int);
+  memcpy(&currRecords, data1 + offset, sizeof(int)); //Getting the amount of records that exist in this block
 
   maxRecords = (BF_BLOCK_SIZE - (sizeof(char) + sizeof(int)*3))/(len1 + len2);
 
+  recordIndex = findRecordPos(data1, fileDesc, value1);  //Get the position it should go
+
   if (currRecords < maxRecords)
   {
-    recordIndex = findRecordPos(data, fileDesc, value1);  //Get the position it should go
     offset = (sizeof(char) + sizeof(int)*3 + recordIndex*(len1 + len2));  //Get the offset to that position
-    memmove(data + offset + len1 + len2, data + offset, (currRecords - recordIndex)*(len1 + len2)); //Move all the records after that position right by recordSize (len1 + len 2)
-    memcpy(data + offset, value1, len1);  //Write to the space we made the new record
+    memmove(data1 + offset + len1 + len2, data1 + offset, (currRecords - recordIndex)*(len1 + len2)); //Move all the records after that position right by recordSize (len1 + len 2)
+    memcpy(data1 + offset, value1, len1);  //Write to the space we made the new record
     offset += len1;
-    memcpy(data + offset, value2, len2);
+    memcpy(data1 + offset, value2, len2);
     currRecords++;
     offset = (sizeof(char) + sizeof(int)*2);
-    memcpy(data + offset, &currRecords, sizeof(int)); //Write the new current number of records to the block
-  }else{
+    memcpy(data1 + offset, &currRecords, sizeof(int)); //Write the new current number of records to the block
+  }else{   //If this block is full we are going to split it and divide its data
+    //Allocating and initializing the new block
+    CALL_OR_DIE(BF_AllocateBlock(openFiles[fileDesc]->bf_desc, tmpBlock));
+    int blockId;
+    CALL_OR_DIE(BF_GetBlockCounter(openFiles[fileDesc]->bf_desc, &blockId));
+    blockId--;
+
+    offset = (sizeof(char) + sizeof(int));
+    memcpy(data1, &blockId, sizeof(int));  //Set as next of the old block the new block
+
+    data2 = BF_Block_GetData(tmpBlock);
+
+    char c = 1; //It is leaf so the first byte of the block is going to be 1
+    memcpy(data2, &c, sizeof(char));
+    data2 += sizeof(char);
+
+    memcpy(data2, &blockId, sizeof(int)); //Writing the block's id to it
+    data2 += sizeof(int);
+
+    memcpy(data2, &nextPtr, sizeof(int));  //The next block of the new block is the one that was next to the old block
+    data2 += sizeof(int);
+
+    int recordsNum = 0; //No records yet inserted
+    memcpy(data2, &recordsNum, sizeof(int));
+
+    //NA KANW DIRTY KAI UNPIN TA BLOCK
 
     //An einai gemato tote prepei na to spasoume se 2 nea blok kai na mirasoume tis times se afta. me kapion tropo na pame ston apo panw komvo tou kai
     //na tsekaroume ean einai gematos kai aftos. An oxi vazoume to neo klidi ston epanw kai ola kala an einai gematos pali ton spame kai kanoume tin proigoumeni
