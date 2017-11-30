@@ -114,21 +114,18 @@ int typeChecker(char attrType, int attrLength, int *type, int *len){
 
 //Takes the search key(target key) and the traversing key(tmp key), the operation (EQUAL, LESS_THAN etc) that we want to apply on the keys and the keytype
 //and returns if the operation is true or false
+//is targetkey op tmpkey?
 bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType){
   switch (operation){
     case EQUAL:
       switch (keyType){
         case 1:
           if (*(int *)targetKey == *(int *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 2:
           if (*(float *)targetKey == *(float *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 3:
           if (!strcmp((char *)targetKey, (char *)tmpKey)) //When comparing strings we dont need to know their length
@@ -142,105 +139,75 @@ bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType){
       switch (keyType){
         case 1:
           if (*(int *)targetKey != *(int *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 2:
           if (*(float *)targetKey != *(float *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 3:
           if (strcmp((char *)targetKey, (char *)tmpKey))
-          {
             return 1;
-          }
           return 0;
       }
     case LESS_THAN:
       switch (keyType){
         case 1:
           if (*(int *)targetKey < *(int *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 2:
           if (*(float *)targetKey < *(float *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 3:
           if (strcmp((char *)targetKey, (char *)tmpKey) < 0)
-          {
             return 1;
-          }
           return 0;
       }
     case GREATER_THAN:
       switch (keyType){
         case 1:
           if (*(int *)targetKey > *(int *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 2:
           if (*(float *)targetKey > *(float *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 3:
           if (strcmp((char *)targetKey, (char *)tmpKey) > 0)
-          {
             return 1;
-          }
           return 0;
       }
     case LESS_THAN_OR_EQUAL:
       switch (keyType){
         case 1:
           if (*(int *)targetKey <= *(int *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 2:
           if (*(float *)targetKey <= *(float *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 3:
           if (strcmp((char *)targetKey, (char *)tmpKey) <= 0)
-          {
             return 1;
-          }
           return 0;
       }
     case GREATER_THAN_OR_EQUAL:
       switch (keyType){
         case 1:
           if (*(int *)targetKey >= *(int *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 2:
           if (*(float *)targetKey >= *(float *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 3:
           if (strcmp((char *)targetKey, (char *)tmpKey) >= 0)
-          {
             return 1;
-          }
           return 0;
       }
   }
@@ -380,9 +347,12 @@ int findRecordPos(void * data, int fd, void * value1){
   int type = openFiles[fd]->type1;
 
   //add the first static data to offset
-  offset += sizeof(bool) + 3*sizeof(int);
-  //the number of records is 9 bytes after the start of the block
-  memmove(&records_no, data+9, sizeof(int));
+  offset += sizeof(bool) + 2*sizeof(int);
+  //get the number of records
+  memmove(&records_no, data+offset, sizeof(int));
+  //add to the offset 4 bytes for keys_no and 4 for the first block pointer
+  offset += 2*sizeof(int);
+  
   //iterate for each record
   while(record < records_no){
     //if the key we just got to is greater or equal to the key we are looking for
@@ -392,7 +362,7 @@ int findRecordPos(void * data, int fd, void * value1){
       return record;
     }
     record++;
-    offset += len1 + len2;
+    offset += len1 + len2 +sizeof(int);
   }
   //if the correct position was not found then it is the next one
   return record;
@@ -413,12 +383,14 @@ int findRecord(void * data, int fd, void * value1){
   int type = openFiles[fd]->type1;
 
   //add the first static data to offset
-  offset += 1 + 4 + 4 + 4;
-  //the number of records is 9 bytes after the start of the block
-  memmove(&records_no, data+9, sizeof(int));
+  offset += sizeof(bool) + 2*sizeof(int);
+  //get the number of records
+  memmove(&records_no, data+offset, sizeof(int));
+  //add to the offset 4 bytes for keys_no and 4 for the first block pointer
+  offset += 2*sizeof(int);
 
   while(!keysComparer(value1, data+offset, EQUAL, type)){
-    offset += len1 + len2;
+    offset += len1 + len2 + sizeof(int);
     //if went through all the blocks return -1
     if(++record == records_no)
       return -1;
