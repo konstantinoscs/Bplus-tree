@@ -2,9 +2,9 @@
 #include "stack.h"
 
 int create_stack(Stack** stack){
-  (*stack) = malloc(sizeof(Stack));
+  *stack = malloc(sizeof(Stack));
   (*stack)->size = 2;
-  (*stack)->keys = malloc(size*sizeof(int));
+  (*stack)->keys = malloc((*stack)->size*sizeof(int));
   (*stack)->elems = 0;
 
   return 1;
@@ -23,16 +23,16 @@ int stack_pop(Stack* stack){
   //if stack has 0 elements return -1
   if(!stack->elems)
     return -1;
-  return stack->keys[--elems];
+  return stack->keys[--stack->elems];
 }
 
 //same as above but don't decrement elems
 int get_top(Stack* stack){
   if(!stack->elems)
     return -1;
-  return stack->keys[elems-1];
+  return stack->keys[stack->elems-1];
 }
 
 int destroy_stack(Stack * stack){
-  free(Stack);
+  free(stack);
 }
