@@ -7,8 +7,8 @@ typedef struct Stack{
   int elems;
 }Stack;
 
-//creates a stack and returns a pointer to it
-Stack * create_stack();
+//creates a stack
+int create_stack(Stack** stack);
 
 //pushes value in the stack
 int stack_push(Stack** stack, int value);

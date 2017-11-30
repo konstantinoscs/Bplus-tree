@@ -1,13 +1,13 @@
 #include "stdlib.h"
 #include "stack.h"
 
-Stack * create_stack(){
- Stack * stack = malloc(sizeof(Stack));
- stack->size = 2;
- stack->keys = malloc(size*sizeof(int));
- stack->elems = 0;
+int create_stack(Stack** stack){
+*stack = malloc(sizeof(Stack));
+ (*stack)->size = 2;
+ (*stack)->keys = malloc(size*sizeof(int));
+ (*stack)->elems = 0;
 
- return stack;
+ return 1;
 }
 
 int stack_push(Stack** stack, int value){
