@@ -1,6 +1,8 @@
 #include "bf.h"
 #include "file_info.h"
 #include "stack.h"
+//circular depndence
+#include "AM.h"
 
 extern file_info * openFiles[20];
 
@@ -13,10 +15,18 @@ int insert_index_val(void *value, int fileDesc, Stack** stack){
   int bf_no = openFiles[fileDesc]->bf_desc;
   //get current block number from stack
   int block_no = (*stack)->get_top();
+  int keytype = openFiles[fileDesc]->type1;
   int keysize =  openFiles[fileDesc]->length1;
 
   if(block_has_space(data, keysize)){
     //insert in current block
+    int offset = find_offset(data, keysize, value, keytype);
+    //move existing data to the right and insert new data
+    //memmove(data+offset+keysize+sizeof(int), data+offset, )
+    memmove(data+offset, value, keysize);
+    offset += keysize;
+    //here I should have which block is beneath
+    //memmove(data+offset, ,sizeof(int));
   }
   else if(is_root()){
     //split and update root
@@ -40,28 +50,27 @@ int block_has_space(char * data, int keysize){
 }
 
 //find_offset takes a key and finds the byte position where it should be put
-int find_offset(char* data, int keysize, void *key){
+int find_offset(char* data, int keysize, void *key, int keytype){
  /*AM 1400192 STRONGLY OPPOSES the use of "bool"*/
 
  int offset = 0;
- int key_no = 0;
+ int keys_no = 0;
 
  //add the first static data to offset
- offset += sizeof(bool) + 3*sizeof(int);
- //the number of records is 9 bytes after the start of the block
- memmove(&records_no, data+9, sizeof(int));
- //iterate for each key/block pointer pair
- //ATTENTION: this while should always finish since
- while(record < records_no){
-   //if the key we just got to is greater or equal to the key we are looking for
-   //return this position - its either the position it is or it should be
-   if (keysComparer(data+offset, value1, GREATER_THAN_OR_EQUAL, type))
-   {
-     return record;
-   }
-   record++;
-   offset += len1 + len2;
+ offset += sizeof(bool) + 2*sizeof(int);
+ //get the number of
+ memmove(&keys_no, data+offset, sizeof(int));
+ //add to the offset 4 bytes for keys_no and 4 for the first block pointer
+ offset += 2*sizeof(int);
+
+ //ATTENTION: this while should always finish since it's called always
+ //when there is space in the block
+ while(!keysComparer(key, data+offset, GREATER_THAN, keytype)){
+
+   keys_no++;
+   //move past one key plus the block pointer
+   offset += keysize + sizeof(int);
  }
  //if the correct position was not found then it is the next one
- return record;
+ return offset;
 }
