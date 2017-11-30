@@ -1,6 +1,8 @@
 #ifndef STACK_H
 #define STACK_H
 
+//struct Stack defines a stack of ints with some basic operations
+//push, pop, get top.
 typedef struct Stack{
   int size;
   int * keys;

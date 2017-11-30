@@ -3,6 +3,7 @@
 #include <string.h>
 #include "AM.h"
 #include "file_info.h"
+#include "stack.h"
 
 #define CALL_OR_DIE(call)     \
   {                           \
@@ -355,7 +356,7 @@ int findMostLeftLeaf(int fd){
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
     CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, tmpBlockPtr, tmpBlock));  //Get to the child block
-    data = BF_Block_GetData(tmpBlock); 
+    data = BF_Block_GetData(tmpBlock);
     memcpy(&isLeaf, data, sizeof(bool));
   }
 
@@ -379,7 +380,7 @@ int findRecordPos(void * data, int fd, void * value1){
   int type = openFiles[fd]->type1;
 
   //add the first static data to offset
-  offset += 1 + 4 + 4 + 4;
+  offset += sizeof(bool) + 3*sizeof(int);
   //the number of records is 9 bytes after the start of the block
   memmove(&records_no, data+9, sizeof(int));
   //iterate for each record
@@ -401,7 +402,7 @@ int findRecordPos(void * data, int fd, void * value1){
 **************FindNextEntry*******************************
 *************************************************/
 
-//findRecord finds the next record which attr1 has value1 and returns 
+//findRecord finds the next record which attr1 has value1 and returns
 //its offset from the start of the block
 int findRecord(void * data, int fd, void * value1){
   int offset = 0;
@@ -575,7 +576,7 @@ int AM_OpenIndex (char *fileName) {
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
 
-  
+
   int file_index = insert_file(type1, len1, type2, len2);
   //check if we have reached the maximum number of files
   if(file_index == -1)
@@ -613,6 +614,8 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   int type1, len1, type2, len2, targetBlockId, recordIndex;
   int offset = 0;
   int currRecords, maxRecords;
+  Stack * stack;
+  create_stack(&stack);
 
   //Getting the attr1 and attr2 type and length
   type1 = openFiles[fileDesc]->type1;
@@ -633,7 +636,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   memcpy(&currRecords, data + offset, sizeof(int)); //Getting the amount of records that exist in this block
 
   maxRecords = (BF_BLOCK_SIZE - (sizeof(char) + sizeof(int)*3))/(len1 + len2);
-  
+
   if (currRecords < maxRecords)
   {
     recordIndex = findRecordPos(data, fileDesc, value1);  //Get the position it should go
@@ -646,7 +649,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
     offset = (sizeof(char) + sizeof(int)*2);
     memcpy(data + offset, &currRecords, sizeof(int)); //Write the new current number of records to the block
   }else{
-    
+
     //An einai gemato tote prepei na to spasoume se 2 nea blok kai na mirasoume tis times se afta. me kapion tropo na pame ston apo panw komvo tou kai
     //na tsekaroume ean einai gematos kai aftos. An oxi vazoume to neo klidi ston epanw kai ola kala an einai gematos pali ton spame kai kanoume tin proigoumeni
     //diadikasia apo tin arxi.
