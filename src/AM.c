@@ -350,9 +350,9 @@ int findRecordPos(void * data, int fd, void * value1){
   offset += sizeof(bool) + 2*sizeof(int);
   //get the number of records
   memmove(&records_no, data+offset, sizeof(int));
-  //add to the offset 4 bytes for keys_no and 4 for the first block pointer
-  offset += 2*sizeof(int);
-  
+  //add to the offset 4 bytes for keys_no
+  offset += sizeof(int);
+
   //iterate for each record
   while(record < records_no){
     //if the key we just got to is greater or equal to the key we are looking for
@@ -362,7 +362,7 @@ int findRecordPos(void * data, int fd, void * value1){
       return record;
     }
     record++;
-    offset += len1 + len2 +sizeof(int);
+    offset += len1 + len2;
   }
   //if the correct position was not found then it is the next one
   return record;
@@ -386,11 +386,11 @@ int findRecord(void * data, int fd, void * value1){
   offset += sizeof(bool) + 2*sizeof(int);
   //get the number of records
   memmove(&records_no, data+offset, sizeof(int));
-  //add to the offset 4 bytes for keys_no and 4 for the first block pointer
-  offset += 2*sizeof(int);
+  //add to the offset 4 bytes for keys_no
+  offset += sizeof(int);
 
   while(!keysComparer(value1, data+offset, EQUAL, type)){
-    offset += len1 + len2 + sizeof(int);
+    offset += len1 + len2;
     //if went through all the blocks return -1
     if(++record == records_no)
       return -1;
