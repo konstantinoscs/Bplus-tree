@@ -625,7 +625,7 @@ int AM_CloseIndex (int fileDesc) {
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
-  /*void *data1 = NULL;
+  void *data1 = NULL;
   void *data2 = NULL;
   void *rootData = NULL;
 
@@ -700,7 +700,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
     blockId--;
 
     offset = (sizeof(char) + sizeof(int));
-    memcpy(data1, &blockId, sizeof(int));  //Set as next of the old block the new block
+    memcpy(data1 + offset, &blockId, sizeof(int));  //Set as next of the old block the new block
 
     data2 = BF_Block_GetData(tmpBlock2);
 
@@ -756,11 +756,29 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
       simpleInsertToLeaf(recordIndex, fileDesc, data2, numRecToNew, value1, value2);  //Make a simple insertion to the old block
     }
 
+    /*int currRecords1, currRecords2;
+    void *lastKey = NULL;
+
+    offset = sizeof(char) + sizeof(int)*2;
+    memcpy(&currRecords1, data1 + offset, sizeof(int));
+    memcpy(&currRecords2, data2 + offset, sizeof(int));
+
+    offset += (sizeof(int) + (currRecords1 - 1)*(len1 + len2));
+    memcpy(lastKey, data1 + offset, len1);
+
+    if (keysComparer(lastKey, newKey, EQUAL, type1))
+    {
+      
+    }*/
+
     BF_Block_SetDirty(tmpBlock1);
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock1));
 
     BF_Block_SetDirty(tmpBlock2);
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock2));
+
+    //Inserting to the index node(s) the first value of the new block, given the files descriptor, the path and the id of the new leaf
+    insert_index_val(newKey, fileDesc, &nodesPath, blockId);
 
 
     destroy_stack(nodesPath);
@@ -792,7 +810,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   //CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
   BF_Block_Destroy(&tmpBlock1);
-  BF_Block_Destroy(&tmpBlock2);*/
+  BF_Block_Destroy(&tmpBlock2);
 
   return AME_OK;
 }
