@@ -26,6 +26,7 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
 
 //inserts an indexing value
 int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
+  printf("Entered index\n");
   BF_Block *curBlock;
   BF_Block_Init(&curBlock);
   //get the number of the bf file we're in
@@ -48,6 +49,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
   int total_size = offset + keys*keysize + (keys+1)*sizeof(int);
 
   if(block_has_space(data, keysize, keys)){
+    printf("Block has space \n");
     //insert in current block
     offset = find_offset(data, keysize, value, keytype);
     //move existing data to the right and insert new data
@@ -56,15 +58,17 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     memmove(data+offset, value, keysize);
     offset += keysize;
     //here I should have which block is beneath
-    memmove(data+offset, &newbid ,sizeof(int));
+    memmove(data+offset, &newbid, sizeof(int));
     //now set offset in the correct position to update the number of keys=
     offset = sizeof(bool) + 2*sizeof(int);
     keys++;
     memmove(data+offset, &keys, sizeof(int));
     //done :)
     BF_Block_SetDirty(curBlock);
+    printf("Block has space out\n");
   }
   else if(is_root(block_no, fileDesc)){
+    printf("Is root\n");
     //split and update root
     BF_Block *newBlock;
     BF_Block_Init(&newBlock);
@@ -124,8 +128,10 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     BF_Block_Destroy(&newBlock);
     BF_Block_Destroy(&newroot);
     free(mid_key);
+    printf("Is root out\n");
   }
   else{
+    printf("Split and pass\n");
     //split and pass one level up
     BF_Block *newBlock;
     BF_Block_Init(&newBlock);
@@ -159,11 +165,13 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     //recursive call
     insert_index_val(mid_key, fileDesc, stack, new_id);
     free(mid_key);
+    printf("Split and pass out\n");
   }
 
   //close/unpnin block ;)
   BF_UnpinBlock(curBlock);
   BF_Block_Destroy(&curBlock);
+  printf("Exit index val\n");
 
 
   return 1;
