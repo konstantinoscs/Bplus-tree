@@ -10,13 +10,13 @@ int create_stack(Stack** stack){
   return 1;
 }
 
-int stack_push(Stack** stack, int value){
+int stack_push(Stack* stack, int value){
   //realloc stack if it has no available space
-  if((*stack)->elems == (*stack)->size){
-    (*stack)->size *= 2;
-    *stack = realloc(*stack, (*stack)->size*sizeof(int));
+  if(stack->elems == stack->size){
+    stack->size *= 2;
+    stack->keys = realloc(stack->keys, stack->size*sizeof(int));
   }
-  (*stack)->keys[(*stack)->elems++] = value;
+  stack->keys[stack->elems++] = value;
 }
 
 int stack_pop(Stack* stack){
@@ -34,5 +34,6 @@ int get_top(Stack* stack){
 }
 
 int destroy_stack(Stack * stack){
+  free(stack->keys);
   free(stack);
 }
