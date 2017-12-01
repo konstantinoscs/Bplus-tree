@@ -328,36 +328,6 @@ int findRecordPos(void * data, int fd, void * value1){
   return record;
 }
 
-/************************************************
-**************FindNextEntry*******************************
-*************************************************/
-
-//findRecord finds the next record which attr1 has value1 and returns
-//its offset from the start of the block
-int findRecord(void * data, int fd, void * value1){
-  int offset = 0;
-  int record = 0;
-  int records_no;
-  int len1 = openFiles[fd]->length1;
-  int len2 = openFiles[fd]->length2;
-  int type = openFiles[fd]->type1;
-
-  //add the first static data to offset
-  offset += sizeof(bool) + 2*sizeof(int);
-  //get the number of records
-  memmove(&records_no, data+offset, sizeof(int));
-  //add to the offset 4 bytes for keys_no
-  offset += sizeof(int);
-
-  while(!keysComparer(value1, data+offset, EQUAL, type)){
-    offset += len1 + len2;
-    //if went through all the blocks return -1
-    if(++record == records_no)
-      return -1;
-  }
-  return record-1;
-}
-
 /***************************************************
 ***************AM_Epipedo***************************
 ****************************************************/
@@ -666,7 +636,7 @@ void *AM_FindNextEntry(int scanDesc) {
                 if(scan->return_value == NULL){  //first time this Scan is called
                   scan->return_value = malloc(sizeof(file->length2));
                   //find the leaf block this key belongs to
-                  scan->block_num = findLeaf(scan->fileDesc,scan->value);
+                  scan->block_num = findLeaf(scan->fileDesc,scan->value,NULL);
                   BF_Block* block;
                   BF_Block_Init(&block);
                   BF_GetBlock(file->bf_desc,scan->block_num,block);
@@ -824,7 +794,7 @@ void *AM_FindNextEntry(int scanDesc) {
                 if(scan->return_value == NULL){ //first time this scan is called
                   scan->return_value = malloc(sizeof(file->length2));
                   //find the leaf block this key belongs to
-                  scan->block_num = findLeaf(scan->fileDesc,scan->value);
+                  scan->block_num = findLeaf(scan->fileDesc,scan->value,NULL);
                   scan->record_num = 0;
                   BF_Block* block;
                   BF_Block_Init(&block);
@@ -920,7 +890,7 @@ void *AM_FindNextEntry(int scanDesc) {
                 if(scan->return_value == NULL){ //first time this scan is called
                   scan->return_value = malloc(sizeof(file->length2));
                   //find the leaf block this key belongs to
-                  scan->block_num = findLeaf(scan->fileDesc,scan->value);
+                  scan->block_num = findLeaf(scan->fileDesc,scan->value,NULL);
                   scan->record_num = 0;
                   BF_Block* block;
                   BF_Block_Init(&block);
