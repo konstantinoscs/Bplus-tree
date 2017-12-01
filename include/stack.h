@@ -13,7 +13,7 @@ typedef struct Stack{
 int create_stack(Stack** stack);
 
 //pushes value in the stack
-int stack_push(Stack** stack, int value);
+int stack_push(Stack* stack, int value);
 
 //pops from stack
 //returns -1 if stack is empty

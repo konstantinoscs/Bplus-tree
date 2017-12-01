@@ -239,7 +239,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   type2 = openFiles[fileDesc]->type2;
   len2 = openFiles[fileDesc]->length2;
 
-  targetBlockId = findLeaf(openFiles[fileDesc]->bf_desc, value1, &nodesPath); //Find the leaf that this value is supposed to be inserted and the path getting there
+  targetBlockId = findLeaf(openFiles[fileDesc]->bf_desc, value1, nodesPath); //Find the leaf that this value is supposed to be inserted and the path getting there
 
   BF_Block *tmpBlock, *tmpBlock1, *tmpBlock2;
   BF_Block_Init(&tmpBlock);
@@ -376,7 +376,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock2));
 
     //Inserting to the index node(s) the first value of the new block, given the files descriptor, the path and the id of the new leaf
-    insert_index_val(newKey, fileDesc, &nodesPath, blockId);
+    insert_index_val(newKey, fileDesc, nodesPath, blockId);
 
 
     destroy_stack(nodesPath);
