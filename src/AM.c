@@ -6,6 +6,7 @@
 #include "BoolType.h"
 #include "Scan.h"
 #include "stack.h"
+#include "insert_lib.h"
 
 #define CALL_OR_DIE(call)     \
   {                           \
@@ -505,7 +506,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   blockMetadataInit(data, 1, downRightBlock, -1, 0);
 
   BF_Block_SetDirty(tmpBlock);
-  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));  
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
 
   //Allocating the down left empty leaf block
@@ -766,7 +767,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 
 
-      
+
 
     //NA KANW DIRTY KAI UNPIN TA BLOCK
 

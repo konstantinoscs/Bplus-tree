@@ -14,7 +14,10 @@ int find_offset(char* data, int keysize, void *key, int keytype);
 //checks if we are in the root
 int is_root(int block_no, int fileDesc);
 //the standard initialization for an inside node
-int initialize_block(char * data, int block_id);
+int initialize_block(char * data, int block_id, int recs);
+
+int find_middle_key(char * data, char * mid_key, void * key, int keysize, int keys_in1st);
+int partition();
 
 //inserts an indexing value
 int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
@@ -64,32 +67,92 @@ int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
     BF_GetBlockCounter(bf_no, &new_id);
     new_id--;
     char * new_data = BF_Block_GetData(newBlock);
-    initialize_block(new_data, new_id);
+    initialize_block(new_data, new_id, 0);
     //keys in 1st is ceil(key2+1/2)
     int keys_in1st = (keys+1)%2 ? (keys+1)/2 +1 : (keys+1)/2;
-    int keys_in2nd = keys_in1st -1;
+    int keys_in2nd = keys - keys_in1st;
     //obviously in root there will be 1 key
     char * mid_key = malloc(keysize);
     //get key to up here
     //find middle key,
+    find_middle_key(data, mid_key, value, keysize, keys_in1st);
     //partition :)
+    partition();
     //workds also for the recursion
     //magic exists :)
     //copy half of the values
-    //
+    //create new root_id  //split and update root
+    BF_Block *newroot;
+    BF_Block_Init(&newroot);
+    BF_AllocateBlock(bf_no, newroot);
+    int root_id = 0;
+    BF_GetBlockCounter(bf_no, &root_id);
+    root_id--;
+    char * root_data = BF_Block_GetData(newroot);
+    initialize_block(root_data, root_id, 1);
+    //offset is already sizeof(bool) + 3*sizeof(int)
+    memmove(root_data+offset, &block_no, sizeof(int));
+    offset += sizeof(int);
+    memmove(root_data+offset, mid_key, keysize);
+    offset += keysize;
+    memmove(root_data+offset, &new_id, sizeof(int));
+    //update the root id in file_info
+    openFiles[fileDesc]->root_id = root_id;
     //update the root_id in openFiles
     //don't forget the metadata
 
+    //cleanup
+    BF_Block_SetDirty(newBlock);
+    BF_Block_SetDirty(newroot);
+    BF_UnpinBlock(newBlock);
+    BF_UnpinBlock(newroot);
+
+    //now I will use newBlock to store the first block
+    BF_GetBlock(bf_no, 0, newBlock);
+    new_data = BF_Block_GetData(newBlock);
+    //memmove the new root id now
+    offset = sizeof("DIBLU$") + 4*(sizeof(int));
+    memmove(new_data+offset, &root_id, sizeof(int));
+    //changed root if so set Dirty
+    BF_Block_SetDirty(newBlock);
+    BF_UnpinBlock(newBlock);
+    BF_Block_Destroy(&newBlock);
+    BF_Block_Destroy(&newroot);
     free(mid_key);
   }
   else{
     //split and pass one level up
     BF_Block *newBlock;
     BF_Block_Init(&newBlock);
+    BF_AllocateBlock(bf_no, newBlock);
+    int new_id = 0;
+    BF_GetBlockCounter(bf_no, &new_id);
+    new_id--;
+    char * new_data = BF_Block_GetData(newBlock);
+    initialize_block(new_data, new_id, 0);
+    //keys in 1st is ceil(key2+1/2)
+    int keys_in1st = (keys+1)%2 ? (keys+1)/2 +1 : (keys+1)/2;
+    int keys_in2nd = keys - keys_in1st;
+    //obviously in root there will be 1 key
+    char * mid_key = malloc(keysize);
+    //get key to up here
+    //find middle key,
+    find_middle_key(data, mid_key, value, keysize, keys_in1st);
+    //partition :)
+    partition();
+
+    //cleanup
+    BF_Block_SetDirty(newBlock);
+    BF_UnpinBlock(newBlock);
+    BF_Block_Destroy(&newBlock);
+    //pop stack and call recursion
+    free(mid_key);
   }
 
   //close/unpnin block ;)
+  BF_UnpinBlock(curBlock);
   BF_Block_Destroy(&curBlock);
+
 
   return 1;
 }
@@ -137,10 +200,9 @@ int is_root(int block_no, int fileDesc){
 }
 
 //the standard initialization for an inside node
-int initialize_block(char * data, int block_id){
+int initialize_block(char * data, int block_id, int recs){
   bool isLeaf = false;
   int nextPtr = -2;
-  int recordsNum = 0;
   int offset = 0;
   memmove(data, &isLeaf, sizeof(bool));
   offset += sizeof(bool);
@@ -148,13 +210,16 @@ int initialize_block(char * data, int block_id){
   offset += sizeof(int);
   memmove(data+offset, &nextPtr, sizeof(int));
   offset += sizeof(int);
-  memmove(data+offset, &recordsNum, sizeof(int));
+  memmove(data+offset, &recs, sizeof(int));
   return 1;
 }
 
-int find_middle_key(char * data, char * mid_key, int keysize, int keys_in1st){
+int find_middle_key(char * data, char * mid_key, void * key, int keysize, int keys_in1st){
   int offset = sizeof(bool) + 3*sizeof(int);
   for(int i=0; i<keys_in1st; i++){
     //if()
   }
+}
+
+int partition(){
 }
