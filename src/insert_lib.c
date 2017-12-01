@@ -16,7 +16,8 @@ int is_root(int block_no, int fileDesc);
 //the standard initialization for an inside node
 int initialize_block(char * data, int block_id, int recs);
 
-int find_middle_key(char * data, char * mid_key, void * key, int keysize, int keys_in1st);
+int find_middle_key(char * data, char * mid_key, void * key, int keytype,
+  int keysize, int keys_in1st);
 int partition();
 
 //inserts an indexing value
@@ -75,7 +76,7 @@ int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
     char * mid_key = malloc(keysize);
     //get key to up here
     //find middle key,
-    find_middle_key(data, mid_key, value, keysize, keys_in1st);
+    find_middle_key(data, mid_key, value, keytype, keysize, keys_in1st);
     //partition :)
     partition();
     //workds also for the recursion
@@ -137,7 +138,7 @@ int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
     char * mid_key = malloc(keysize);
     //get key to up here
     //find middle key,
-    find_middle_key(data, mid_key, value, keysize, keys_in1st);
+    find_middle_key(data, mid_key, value, keytype, keysize, keys_in1st);
     //partition :)
     partition();
 
@@ -214,11 +215,23 @@ int initialize_block(char * data, int block_id, int recs){
   return 1;
 }
 
-int find_middle_key(char * data, char * mid_key, void * key, int keysize, int keys_in1st){
+//
+int find_middle_key(char * data, char * mid_key, void * key, int keytype,
+  int keysize, int keys_in1st){
+
   int offset = sizeof(bool) + 3*sizeof(int);
+  int past_key = 0;
   for(int i=0; i<keys_in1st; i++){
-    //if()
+    if(past_key || keysComparer(data+offset, key, LESS_THAN, keytype))
+      offset += keysize;
+    else
+      past_key = 1;
   }
+  //copy the correct middle key to the variable
+  if(past_key || keysComparer(data+offset, key, LESS_THAN, keytype))
+    memmove(mid_key, data+offset, keysize);
+  else
+    memmove(mid_key, key, keysize);
 }
 
 int partition(){
