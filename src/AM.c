@@ -258,7 +258,6 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
   memcpy(&nextPtr, data1 + offset, sizeof(int));// Getting the nextPtr of the targed block
   offset += sizeof(int);
   memcpy(&currRecords, data1 + offset, sizeof(int)); //Getting the amount of records that exist in this block
-
   maxRecords = (BF_BLOCK_SIZE - (sizeof(char) + sizeof(int)*3))/(len1 + len2);
 
   recordIndex = findRecordPos(data1, fileDesc, value1);  //Get the position it should go

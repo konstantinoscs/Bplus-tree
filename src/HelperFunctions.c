@@ -113,7 +113,8 @@ int findLeaf(int fd, void *key, Stack *leafPath){
   BF_Block_Init(&tmpBlock);
 
   int keyType, keyLength, rootId, tmpBlockPtr, keysNumber, targetBlockId, tmpBlockId;
-  void *data, *tmpKey;
+  void *data;
+  char *tmpKey = malloc(openFiles[fd]->length1);
   bool isLeaf = 0;
 
   //Get the type and the length of this file's key and the root
@@ -188,7 +189,7 @@ int findLeaf(int fd, void *key, Stack *leafPath){
   //After all this loops we are on the block that our key exists or it should at least
   data += sizeof(char); //So move to the block id the data pointer
   memcpy(&targetBlockId, data, sizeof(int));  //Get the block id
-
+  free(tmpKey);
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
 
