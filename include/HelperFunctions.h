@@ -50,7 +50,7 @@ bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType);
 //Returning the stack full with the path to the leaf and the id of the leaf
 //that has the key we are looking for or should have it at least. If called with null leafPath we didnt need
 //to keep tha path in this function call
-int findLeaf(int fd, void *key, Stack **leafPath);
+int findLeaf(int fd, void *key, Stack *leafPath);
 
 //Returning the id of the most left leaf
 int findMostLeftLeaf(int fd);

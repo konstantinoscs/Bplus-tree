@@ -25,13 +25,13 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
   int newbid, int total_size);
 
 //inserts an indexing value
-int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
+int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
   BF_Block *curBlock;
   BF_Block_Init(&curBlock);
   //get the number of the bf file we're in
   int bf_no = openFiles[fileDesc]->bf_desc;
   //get current block number from stack
-  int block_no = get_top((*stack));
+  int block_no = get_top(stack);
   //open block and get its data
   BF_GetBlock(bf_no, block_no, curBlock);
   char * data = BF_Block_GetData(curBlock);
@@ -153,7 +153,7 @@ int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
     BF_UnpinBlock(newBlock);
     BF_Block_Destroy(&newBlock);
     //pop stack and call recursion
-    if(stack_pop((*stack))){
+    if(stack_pop((stack))== -1){
       printf("Invalid stack\n");
     }
     //recursive call
