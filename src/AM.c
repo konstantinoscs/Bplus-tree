@@ -3,6 +3,8 @@
 #include <string.h>
 #include "AM.h"
 #include "file_info.h"
+#include "BoolType.h"
+#include "Scan.h"
 #include "stack.h"
 
 #define CALL_OR_DIE(call)     \
@@ -29,48 +31,6 @@ file_info * openFiles[20];
 **************Scan*******************************
 *************************************************/
 
-typedef struct Scan {
-	int fileDesc;			//the file that te scan refers to
-	int block_num;		//last block that was checked
-	int record_num;		//last record that was checked
-	int op;			//the operation
-	void *value;			//the target value
-  bool ScanIsOver;
-  void* return_value; //gets allocated first time AM_FindNextEntry is called, and freed when ScanIsOver. Holds the last value returned.
-}Scan;
-
-#define MAX_SCANS 20
-Scan* openScans[MAX_SCANS];  //This is where open Scans are saved. The array is initialized with NULL's.
-
-int openScansInsert(Scan* scan);  //inserts a Scan in openScans[] if possible and returns the position
-int openScansFindEmptySlot();     //finds the first empty slot in openScans[]
-bool openScansFull();             //checks
-
-
-int openScansInsert(Scan* scan){
-	int pos = openScansFindEmptySlot();
-  if(openScansFull() != true)
-    openScans[pos] = scan;
-  else{
-    fprintf(stderr, "openScans[] can't fit more Scans! Exiting...\n");
-    exit(0);
-  }
-  return pos;
-}
-
-int openScansFindEmptySlot(){
-	int i;
-	for(i=0; i<MAX_SCANS; i++)
-		if(openScans[i] == NULL)
-			return i;
-	return i;
-}
-
-bool openScansFull(){
-	if(openScansFindEmptySlot() == MAX_SCANS) //if you cant find empty slot in [0-19] then its full
-		return true;
-	return false;
-}
 
 /************************************************
 **************Create*******************************
@@ -778,103 +738,82 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 
 int AM_OpenIndexScan(int fileDesc, int op, void *value) {
-  /*Scan* scan = malloc(sizeof(Scan));
+  Scan* scan = malloc(sizeof(Scan));
   scan->fileDesc = fileDesc;
 	scan->op = op;
 	scan->value = value;
 	scan->block_num = -1;
 	scan->record_num = -1;
   scan->ScanIsOver = false;
+  scan->return_value = NULL;
 
 	return openScansInsert(scan);
-  */return AME_OK;
+  //return AME_OK;
 }
 
 
 void *AM_FindNextEntry(int scanDesc) {
-  //scan = openScans[scanDesc];
-  //file_info* file = openFiles[scan->fileDesc];
+  Scan* scan = openScans[scanDesc];
+  file_info* file = openFiles[scan->fileDesc];
 
-
-  /*int next_block_num;
-
-  //get the next_block_num
-  int block_num = scan->block_num;
-  if(block_num == -1)
-    //if there is no block yet (scan->block_num=-1)
-    first_time_Scan = true;
-  else{
-    //get next_block_num from current block
-    BF_Block* block;
-    BF_Block_Init(&block);
-    BF_GetBlock(scan->fileDesc,scan->block_num,block);
-    char* data = BF_Block_GetData(block);
-    int offset = sizeof(char)+sizeof(int);
-    memcpy(&next_block_num,data+offset,sizeof(int));
-  }
-
-  //get next block
-  if(next_block_num == -1){ //make sure there is a next block
-    scan->ScanIsOver = true;
-    AM_errno = AME_EOF;
+  if(scan->ScanIsOver){
+    if(scan->return_value != NULL)
+      free(scan->return_value);
     return NULL;
   }
-  BF_Block* next_block;
-  BF_GetBlock(scan->fileDesc,next_block_num,next_block);
-  char* data = BF_Block_GetData(next_block);
 
-  if(nextRecord == NULL)
-    return NULL;
-*/
-/*
-  switch(scan.op){
+  switch(scan->op){
     case EQUAL:
-                if(scan->block_num == -1){  //first time this Scan is called
+                if(scan->return_value == NULL){  //first time this Scan is called
                   scan->return_value = malloc(sizeof(file->length2));
                   //find the leaf block this key belongs to
-                  scan->block_num = findLeаf(scan->fileDesc,*scan->value);
+                  scan->block_num = findLeaf(scan->fileDesc,scan->value);
+                  BF_Block* block;
                   BF_Block_Init(&block);
                   BF_GetBlock(file->bf_desc,scan->block_num,block);
                   //get its data
                   char* data = BF_Block_GetData(block);
-                  //find record
-                  int recordPos = findRecord(data,scan->fileDesc,scan->value);
-                  //find attr2 of record
-                  if(recordPos == -1){ //record not found
-                    free(scan->return_value);
-                    scan->ScanIsOver = true;
-                    AM_errno = RECORD_NOT_FOUND;
-                    return NULL;
+                  //find the first record with scan->value in this block
+                  scan->record_num = 0;
+                  void* recordAttr1 = data+sizeof(char)+3*sizeof(int);
+                  while(!keysComparer(recordAttr1,scan->value,EQUAL,file->type1)){
+                    int next_record_offset = ScanNextRecord(scan,&block,&data);
+                    if(next_record_offset == NO_NEXT_BLOCK)
+                      return NULL;  //end the Scan
+                    else
+                      recordAttr1 = data+next_record_offset;
                   }
-                  int offset = sizeof(char)+3*sizeof(int)+recordPos*(sizeof(file->length2)+sizeof(file->length2))+file->length1;
-                  //save it in return_value
-                  memcpy(scan->return_value,data+offset,sizeof(file->length2));
-                  //tell scan we checked this record
-                  scan->record_num = recordPos;
+                  //now we've got a record that is EQUAL, so lets return it
+                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
                   return scan->return_value;
                 }
-                else{
+                else{                       //if this scan gets called again, we ned to check for more equal values (there arent any equals in different blocks)
                   BF_Block* block;
                   BF_Block_Init(&block);
                   BF_GetBlock(file->bf_desc,scan->block_num,block);
                   //get blocks data
                   char* data = BF_Block_GetData(block);
-                  //check if the next record is equal as well
-                  scan->record_num++;
-                  void* nextRecordAttr1 = data + sizeof(char)+3*sizeof(int)+record_num*(sizeof(file->length1+file->lenght2));
-                  if( *nextRecordAttr1 == *scan->value){
-                    memcpy(scan->return_value,data+nextRecordAttr1+file->lenght1,sizeof(file->lenght2));
+                  //look at the next record
+                  int next_record_offset = ScanNextRecord(scan,&block,&data);
+                  void* recordAttr1;
+                  if(next_record_offset == NO_NEXT_BLOCK)
+                    return NULL;  //end the Scan
+                  else
+                    recordAttr1 = data+next_record_offset;
+                  //is the next record is equal as well?
+                  if(keysComparer(recordAttr1, scan->value, EQUAL, file->type1)){  //if it is equal
+                    memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                     //clear block
                     BF_UnpinBlock(block);
                     BF_Block_Destroy(&block);
                     return scan->return_value;
                   }
-                  //if its not equal then end the scan
-                  else{
+                  else{                                         //if its not equal then end the scan (the rest wont be equal either)
                     free(scan->return_value);
+                    scan->return_value = NULL;
                     scan->ScanIsOver = true;
                     //clear block
                     BF_UnpinBlock(block);
@@ -884,7 +823,7 @@ void *AM_FindNextEntry(int scanDesc) {
                 }
                 break;
     case NOT_EQUAL:
-                if(scan->block_num == -1){  //first time this Scan is called
+                if(scan->return_value == NULL){  //first time this Scan is called
                   scan->return_value = malloc(sizeof(file->length2));
                   //find the left most block
                   scan->block_num = findMostLeftLeaf(scan->fileDesc);
@@ -893,48 +832,246 @@ void *AM_FindNextEntry(int scanDesc) {
                   BF_GetBlock(file->bf_desc,scan->block_num,block);
                   //get blocks data
                   char* data = BF_Block_GetData(block);
-                  //check that there is
-                  //get attr1 of the first record
-                  int offset = -1, pos=-1;
+                  //find the first record of this block
+                  scan->record_num = 0;
+                  void* recordAttr1 = data+sizeof(char)+3*sizeof(int);
+                  //is this record not_equal?
+                  while(!keysComparer(recordAttr1,scan->value,NOT_EQUAL,file->type1)){  //if not check the next record until you find one that is not_equal
+                    int next_record_offset = ScanNextRecord(scan,&block,&data);
+                    if(next_record_offset == NO_NEXT_BLOCK)
+                      return NULL;  //end the Scan
+                    else
+                      recordAttr1 = data+next_record_offset;
+                  }
+                  //now we've got a record that is not_equal, so lets return it
+                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  //clear block
+                  BF_UnpinBlock(block);
+                  BF_Block_Destroy(&block);
+                  return scan->return_value;
+                }
+                else{         //not the first time
+                  BF_Block* block;
+                  BF_Block_Init(&block);
+                  BF_GetBlock(file->bf_desc,scan->block_num,block);
+                  char* data = BF_Block_GetData(block);
                   void* num_of_records = data+sizeof(char)+2*sizeof(int);
-                  while(offset == -1 && pos<*num_of_records){
-                    offset = getRecord(data,scan->fileDesc,0); //get records offset at pos
-                    pos++;
-                  }
-                  if(offset == -1){ //if there is no record here
-
-                  }
-                  void* attr1 = data+
-
-                  if(*attr1 != *scan->value){ //if NOT EQUAL then return it
-
-                  }
-                  else{                       //ignore it and skip to the next record
-
-                  }
+                  void* recordAttr1;
+                  //look at the next record
+                  do{
+                    int next_record_offset = ScanNextRecord(scan,&block,&data);
+                    if(next_record_offset == NO_NEXT_BLOCK)
+                      return NULL;  //if there is no next block we end the Scan
+                    else
+                      recordAttr1 = data+next_record_offset;
+                  }while(!keysComparer(recordAttr1,scan->value,NOT_EQUAL,file->type1));  //is this record not_equal? if not check the next record untill you find one that is not_equal
+                  //now we've got a record that is not_equal, so lets return it
+                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  //clear block
+                  BF_UnpinBlock(block);
+                  BF_Block_Destroy(&block);
+                  return scan->return_value;
                 }
-                else{
-
+    case LESS_THAN:
+                if(scan->return_value == NULL){ //fist time this scan is called
+                  scan->return_value = malloc(sizeof(file->length2));
+                  //find the left most block
+                  scan->block_num = findMostLeftLeaf(scan->fileDesc);
+                  BF_Block* block;
+                  BF_Block_Init(&block);
+                  BF_GetBlock(file->bf_desc,scan->block_num,block);
+                  //get blocks data
+                  char* data = BF_Block_GetData(block);
+                  //find the first record of this block
+                  scan->record_num = 0;
+                  void* recordAttr1 = data+sizeof(char)+3*sizeof(int);
+                  //is this record less_than?
+                  while(!keysComparer(recordAttr1,scan->value,LESS_THAN,file->type1)){  //if not check the next record until you find one that is less_than
+                    int next_record_offset = ScanNextRecord(scan,&block,&data);
+                    if(next_record_offset == NO_NEXT_BLOCK)
+                      return NULL;  //end the Scan
+                    else
+                      recordAttr1 = data+next_record_offset;
+                  }
+                  //now we've got a record that is less_than, so lets return it
+                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  //clear block
+                  BF_UnpinBlock(block);
+                  BF_Block_Destroy(&block);
+                  return scan->return_value;
                 }
-  }*/
-}
-/*
-int getRecord(void* data, int fileDesc, int pos){  //return the offset of the record at pos
-  file_info* file = openFiles[fileDesc];
-  //check if there is a record at pos
-  void* num_of_records = data+sizeof(char)+2*sizeof(int);
-  if(pos >= *num_of_records)  //if not: abort
-    return -1;
-  else{
-    int offset = sizeof(char)+3*sizeof(int);
-    for(int i=0; i<pos; i++){
-      offset += sizeof(file->lenght1)+sizeof(file->lenght2);
-    }
-    return offset;
+                else{   //if its not the first tiem
+                  BF_Block* block;
+                  BF_Block_Init(&block);
+                  BF_GetBlock(file->bf_desc,scan->block_num,block);
+                  char* data = BF_Block_GetData(block);
+                  void* recordAttr1;
+                  //look at the next record
+                  do{
+                    int next_record_offset = ScanNextRecord(scan,&block,&data);
+                    if(next_record_offset == NO_NEXT_BLOCK)
+                      return NULL;  //if there is no next block we end the Scan
+                    else
+                      recordAttr1 = data+next_record_offset;
+                  }while(!keysComparer(recordAttr1,scan->value,LESS_THAN,file->type1));  //is this record less_than? if not check the next record untill you find one that is less_than
+                  //now we've got a record that is less_than, so lets return it
+                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  //clear block
+                  BF_UnpinBlock(block);
+                  BF_Block_Destroy(&block);
+                  return scan->return_value;
+                }
+    case GREATER_THAN:
+                if(scan->return_value == NULL){ //first time this scan is called
+                  scan->return_value = malloc(sizeof(file->length2));
+                  //find the leaf block this key belongs to
+                  scan->block_num = findLeaf(scan->fileDesc,scan->value);
+                  scan->record_num = 0;
+                  BF_Block* block;
+                  BF_Block_Init(&block);
+                  BF_GetBlock(file->bf_desc,scan->block_num,block);
+                  //get its data
+                  char* data = BF_Block_GetData(block);
+                  //find the first record with attribute1 >scan->value in this block
+                  void* recordAttr1 = data+sizeof(char)+3*sizeof(int);
+                  while(!keysComparer(recordAttr1,scan->value,GREATER_THAN,file->type1)){
+                    int next_record_offset = ScanNextRecord(scan,&block,&data);
+                    if(next_record_offset == NO_NEXT_BLOCK)
+                      return NULL;  //if there is no next block we end the Scan
+                    else
+                      recordAttr1 = data+next_record_offset;
+                  };
+                  //now we've got a GREATER_THAN record, so lets return it
+                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  //clear block
+                  BF_UnpinBlock(block);
+                  BF_Block_Destroy(&block);
+                  return scan->return_value;
+                }
+                else{       //not the first time
+                  BF_Block* block;
+                  BF_Block_Init(&block);
+                  BF_GetBlock(file->bf_desc,scan->block_num,block);
+                  char* data = BF_Block_GetData(block);
+                  void* recordAttr1;
+                  //look at the next record
+                  int next_record_offset = ScanNextRecord(scan,&block,&data);
+                  if(next_record_offset == NO_NEXT_BLOCK)
+                    return NULL;  //if there is no next block we end the Scan
+                  else
+                    recordAttr1 = data+next_record_offset;
+                  //next record is deffinetely GREATER_THAN, so lets return it
+                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  //clear block
+                  BF_UnpinBlock(block);
+                  BF_Block_Destroy(&block);
+                  return scan->return_value;
+                }
+    case LESS_THAN_OR_EQUAL:
+                if(scan->return_value == NULL){ //fist time this scan is called
+                  scan->return_value = malloc(sizeof(file->length2));
+                  //find the left most block
+                  scan->block_num = findMostLeftLeaf(scan->fileDesc);
+                  BF_Block* block;
+                  BF_Block_Init(&block);
+                  BF_GetBlock(file->bf_desc,scan->block_num,block);
+                  //get blocks data
+                  char* data = BF_Block_GetData(block);
+                  //find the first record of this block
+                  scan->record_num = 0;
+                  void* recordAttr1 = data+sizeof(char)+3*sizeof(int);
+                  scan->record_num = 0;
+                  //is this record LESS_THAN_OR_EQUAL?
+                  while(!keysComparer(recordAttr1,scan->value,LESS_THAN_OR_EQUAL,file->type1)){  //if not check the next record until you find one that is LESS_THAN_OR_EQUAL
+                    int next_record_offset = ScanNextRecord(scan,&block,&data);
+                    if(next_record_offset == NO_NEXT_BLOCK)
+                      return NULL;  //end the Scan
+                    else
+                      recordAttr1 = data+next_record_offset;
+                  }
+                  //now we've got a record that is LESS_THAN_OR_EQUAL, so lets return it
+                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  //clear block
+                  BF_UnpinBlock(block);
+                  BF_Block_Destroy(&block);
+                  return scan->return_value;
+                }
+                else{   //if its not the first time
+                  BF_Block* block;
+                  BF_Block_Init(&block);
+                  BF_GetBlock(file->bf_desc,scan->block_num,block);
+                  char* data = BF_Block_GetData(block);
+                  void* recordAttr1;
+                  //look at the next record
+                  do{
+                    int next_record_offset = ScanNextRecord(scan,&block,&data);
+                    if(next_record_offset == NO_NEXT_BLOCK)
+                      return NULL;  //if there is no next block we end the Scan
+                    else
+                      recordAttr1 = data+next_record_offset;
+                  }while(!keysComparer(recordAttr1,scan->value,LESS_THAN_OR_EQUAL,file->type1));  //is this record LESS_THAN_OR_EQUAL? if not check the next record untill you find one that
+                  //now we've got a record that is LESS_THAN_OR_EQUAL, so lets return it
+                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  //clear block
+                  BF_UnpinBlock(block);
+                  BF_Block_Destroy(&block);
+                  return scan->return_value;
+                }
+    case GREATER_THAN_OR_EQUAL:
+                if(scan->return_value == NULL){ //first time this scan is called
+                  scan->return_value = malloc(sizeof(file->length2));
+                  //find the leaf block this key belongs to
+                  scan->block_num = findLeaf(scan->fileDesc,scan->value);
+                  scan->record_num = 0;
+                  BF_Block* block;
+                  BF_Block_Init(&block);
+                  BF_GetBlock(file->bf_desc,scan->block_num,block);
+                  //get its data
+                  char* data = BF_Block_GetData(block);
+                  //find the first record with attribute1 >=scan->value in this block
+                  void* recordAttr1 = data+sizeof(char)+3*sizeof(int);
+                  while(!keysComparer(recordAttr1,scan->return_value,GREATER_THAN_OR_EQUAL,file->type1)){
+                    int next_record_offset = ScanNextRecord(scan,&block,&data);
+                    if(next_record_offset == NO_NEXT_BLOCK)
+                      return NULL;  //end the Scan
+                    else
+                      recordAttr1 = data+next_record_offset;
+                  }
+                  //now we've got a record that is GREATER_THAN_OR_EQUAL, so lets return it
+                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  //clear block
+                  BF_UnpinBlock(block);
+                  BF_Block_Destroy(&block);
+                  return scan->return_value;
+                }
+                else{       //not the first time
+                  BF_Block* block;
+                  BF_Block_Init(&block);
+                  BF_GetBlock(file->bf_desc,scan->block_num,block);
+                  char* data = BF_Block_GetData(block);
+                  void* recordAttr1;
+                  //look at the next record
+                  int next_record_offset = ScanNextRecord(scan,&block,&data);
+                  if(next_record_offset == NO_NEXT_BLOCK)
+                    return NULL;  //if there is no next block we end the Scan
+                  else
+                    recordAttr1 = data+next_record_offset;
+                  //next record is deffinetely GREATER_THAN, so lets return it
+                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  //clear block
+                  BF_UnpinBlock(block);
+                  BF_Block_Destroy(&block);
+                  return scan->return_value;
+                }
   }
-}*/
+}
 
 int AM_CloseIndexScan(int scanDesc) {
+  Scan* scan = openScans[scanDesc];
+  if(scan->return_value != NULL)
+    free(scan->return_value);
+  free(scan);
+  openScans[scanDesc] = NULL;
   return AME_OK;
 }
 
