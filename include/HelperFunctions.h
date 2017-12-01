@@ -71,5 +71,8 @@ int typeChecker(char attrType, int attrLength, int *type, int *len);
 //Initializing a new blocks metadata
 void blockMetadataInit(void *data, bool isLeaf, int blockId, int nextPtr, int recordsNum);
 
+//Returning how many keys are equal to the target key
+int sameKeysCount(void *data, void *targetkey, int length, int type, int currRecords);
+
 
 #endif
