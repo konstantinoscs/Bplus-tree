@@ -36,8 +36,9 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   attrMeta.len2 = len2;*/
 
   int fd;
+  int rootInitialized = 0;  //The root is not initialized yet, no record has been inserted
   //temporarily insert the file in openFiles
-  int file_index = insert_file(type1, len1, type2, len2);
+  int file_index = insert_file(type1, len1, type2, len2, rootInitialized);
   if(file_index == -1)
     return AME_MAXFILES;
 
@@ -59,7 +60,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   strcpy(keyWord,"DIBLU$");
   memcpy(data, keyWord, sizeof(char)*15);//Copying the key-phrase DIBLU$ that shows us that this is a B+ file
   data += sizeof(char)*15;
-  //Writing the attr1 and attr2 type and length right after the keyWord in the metadata block
+  //Writing the attr1 and attr2 type and length right after the keyWord in the metadata block and a flag that root has no key yet
   memcpy(data, &type1, sizeof(int));
   data += sizeof(int);
   memcpy(data, &len1, sizeof(int));
@@ -67,6 +68,8 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   memcpy(data, &type2, sizeof(int));
   data += sizeof(int);
   memcpy(data, &len2, sizeof(int));
+  data += sizeof(int);
+  memcpy(data, &rootInitialized, sizeof(int));
 
   BF_Block_SetDirty(tmpBlock);
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
@@ -153,7 +156,7 @@ int AM_OpenIndex (char *fileName) {
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
 
-  int type1,type2,len1,len2, fileDesc, rootId;
+  int type1,type2,len1,len2, fileDesc, rootId, rootInitialized;
   char *data = NULL;
 
 
@@ -179,12 +182,14 @@ int AM_OpenIndex (char *fileName) {
   memcpy(&len2, data, sizeof(int));
   data += sizeof(int);
   memcpy(&rootId, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&rootInitialized, data, sizeof(int));
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
 
 
-  int file_index = insert_file(type1, len1, type2, len2);
+  int file_index = insert_file(type1, len1, type2, len2, rootInitialized);
   //check if we have reached the maximum number of files
   if(file_index == -1)
     return AME_MAXFILES;
@@ -216,8 +221,9 @@ int AM_CloseIndex (int fileDesc) {
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
-/*  void *data1 = NULL;
+  /*void *data1 = NULL;
   void *data2 = NULL;
+  void *rootData = NULL;
 
   int type1, len1, type2, len2, targetBlockId, recordIndex, nextPtr;
   int offset = 0;
@@ -234,10 +240,12 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
   targetBlockId = findLeaf(openFiles[fileDesc]->bf_desc, value1, &nodesPath); //Find the leaf that this value is supposed to be inserted and the path getting there
 
-  BF_Block *tmpBlock;
+  BF_Block *tmpBlock, *tmpBlock1, *tmpBlock2;
   BF_Block_Init(&tmpBlock);
-  CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, targetBlockId, tmpBlock));//Getting the block that we are supposed to insert the new record
-  data1 = BF_Block_GetData(tmpBlock);//and its data
+  BF_Block_Init(&tmpBlock1);
+  BF_Block_Init(&tmpBlock2);
+  CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, targetBlockId, tmpBlock1));//Getting the block that we are supposed to insert the new record
+  data1 = BF_Block_GetData(tmpBlock1);//and its data
 
   offset = (sizeof(char) + sizeof(int));
 
@@ -252,9 +260,37 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   if (currRecords < maxRecords)
   {
     simpleInsertToLeaf(recordIndex, fileDesc, data1, currRecords, value1, value2);
+
+    BF_Block_SetDirty(tmpBlock1);
+    CALL_OR_DIE(BF_UnpinBlock(tmpBlock1));
+
+    if (!openFiles[fileDesc]->rootInitialized)  //If its the first entry that we insert we have to put it as a key to the root
+    {
+      CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, openFiles[fileDesc]->root_id, tmpBlock));//Getting the root
+      rootData = BF_Block_GetData(tmpBlock);//and its data
+      offset = sizeof(char) + sizeof(int)*2;
+      int currKeys = 1;
+      memcpy(rootData + offset, &currKeys, sizeof(int));  //Increasing the number of current keys to root to one
+      offset += sizeof(int)*2;
+      memcpy(rootData + offset, value1, len1);  //Writing the first value of the new record as a key to the root
+      openFiles[fileDesc]->rootInitialized = 1; //The root now is initialized
+      BF_Block_SetDirty(tmpBlock);
+      CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+
+      CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, 0, tmpBlock));//Getting the metadata block
+      rootData = BF_Block_GetData(tmpBlock);//and its data
+
+      offset = sizeof(char)*15 + sizeof(int)*5;
+      int rootInitialized = 1;
+      memcpy(rootData + offset, &rootInitialized, sizeof(int));
+
+      BF_Block_SetDirty(tmpBlock);
+      CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+    }
+
   }else{   //If this block is full we are going to split it and divide its data
     //Allocating and initializing the new block
-    CALL_OR_DIE(BF_AllocateBlock(openFiles[fileDesc]->bf_desc, tmpBlock));
+    CALL_OR_DIE(BF_AllocateBlock(openFiles[fileDesc]->bf_desc, tmpBlock2));
     int blockId;
     CALL_OR_DIE(BF_GetBlockCounter(openFiles[fileDesc]->bf_desc, &blockId));
     blockId--;
@@ -262,7 +298,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
     offset = (sizeof(char) + sizeof(int));
     memcpy(data1, &blockId, sizeof(int));  //Set as next of the old block the new block
 
-    data2 = BF_Block_GetData(tmpBlock);
+    data2 = BF_Block_GetData(tmpBlock2);
 
     //Inserting data to the new block, arguments: 1 means a leaf, blockId is its id,
     //nextPtr means the next block of the new block is the one that was next to the old block, 0 records yet inserted
@@ -305,7 +341,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
     data2 += sizeof(int);
     memcpy(newKey, data2, len1); //Take the first attribute of the new block to take its key STEFANIDI EDW EISAI
-    data2 = BF_Block_GetData(tmpBlock);
+    data2 = BF_Block_GetData(tmpBlock2);
 
     if (goesToOld)  //If the new record is to go to the old block
     {
@@ -315,6 +351,13 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
       recordIndex = findRecordPos(data2, fileDesc, value1);  //Get the position it should go again in case something changed
       simpleInsertToLeaf(recordIndex, fileDesc, data2, numRecToNew, value1, value2);  //Make a simple insertion to the old block
     }
+
+    BF_Block_SetDirty(tmpBlock1);
+    CALL_OR_DIE(BF_UnpinBlock(tmpBlock1));
+
+    BF_Block_SetDirty(tmpBlock2);
+    CALL_OR_DIE(BF_UnpinBlock(tmpBlock2));
+
 
     destroy_stack(nodesPath);
 
@@ -342,8 +385,10 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   }
 
 
-  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
-  BF_Block_Destroy(&tmpBlock);*/
+  //CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+  BF_Block_Destroy(&tmpBlock);
+  BF_Block_Destroy(&tmpBlock1);
+  BF_Block_Destroy(&tmpBlock2);*/
 
   return AME_OK;
 }
