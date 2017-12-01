@@ -40,6 +40,7 @@ int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
   //get necessary info about key
   int keytype = openFiles[fileDesc]->type1;
   int keysize =  openFiles[fileDesc]->length1;
+  //the total size of the existing block
   int total_size = offset + keys*keysize + (keys+1)*sizeof(int);
 
   if(block_has_space(data, keysize, keys)){
@@ -160,12 +161,12 @@ int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
 
 //preety straight forward
 int block_has_space(char * data, int keysize, int keys){
-  int avail_space = BF_BLOCK_SIZE;
+  int avail_space = 0;
   //add the first static data to offset
   int offset = sizeof(bool) + 3*sizeof(int);
   //after the static offset we have (keys)*keysize + keys+1*int
   //and we want to add a key and an int
-  avail_space -= offset - (keys+1)*keysize - (keys+2)*sizeof(int);
+  avail_space = BF_BLOCK_SIZE - offset - (keys+1)*keysize - (keys+2)*sizeof(int);
   return avail_space < 0 ? 0 : 1;
 }
 
@@ -219,20 +220,81 @@ int initialize_block(char * data, int block_id, int recs){
 int find_middle_key(char * data, char * mid_key, void * key, int keytype,
   int keysize, int keys_in1st){
 
-  int offset = sizeof(bool) + 3*sizeof(int);
+  int offset = sizeof(bool) + 4*sizeof(int);
   int past_key = 0;
   for(int i=0; i<keys_in1st; i++){
     if(past_key || keysComparer(data+offset, key, LESS_THAN, keytype))
-      offset += keysize;
+      offset += keysize +sizeof(int);
     else
       past_key = 1;
   }
   //copy the correct middle key to the variable
-  if(past_key || keysComparer(data+offset, key, LESS_THAN, keytype))
+  if(past_key || keysComparer(data+offset, key, LESS_THAN, keytype)){
     memmove(mid_key, data+offset, keysize);
-  else
+    offset += keysize +sizeof(int);
+  }
+  else{
     memmove(mid_key, key, keysize);
+  }
+  offset -= sizeof(int);
+  //past this offset are the greater values
+  return offset;
 }
 
-int partition(){
+
+int partition(char *ldata, char *rdata, char * mid_key, void * key,
+  int keytype, int keysize, int keys_in1st, int keys_in2nd, int offset,
+  int newbid, int total_size){
+
+  int roffset = sizeof(bool) + 2*sizeof(int);
+  int loffset = offset;
+
+  //move keys_in2nd no of keys in rblock and possibly insert the new key
+  //first copy the number of keys
+  memmove(rdata+roffset, &keys_in2nd, sizeof(int));
+  roffset += sizeof(int);
+  //then copy the first block pointer
+  memmove(rdata+roffset, ldata+loffset, sizeof(int));
+  offset += sizeof(int);
+  roffset += sizeof(int);
+  //copy all the key/pointer pairs
+  for(int=0; i<keys_in2nd; i++){
+    //copy the key
+    if(keysComparer(key, data+loffset, LESS_THAN, keytype)){
+      memmove(radata+roffset, key, keysize);
+      roffset += keysize;
+      memmove(radata+roffset, &newbid, sizeof(int));
+      roffset += sizeof(int);
+    }
+    else{
+      memmove(rdata+roffset, ldata+loffset, keysize);
+      loffset += keysize;
+      roffset += keysize;
+      //copy the block pointer
+      memmove(rdata+roffset, ldata+loffset, sizeof(int));
+      loffset += sizeof(int);
+      roffset += sizeof(int);
+    }
+  }
+
+  //keep keys_in1st no of keys in lblock and possibly insert the new key
+  //first update the number of keys the left block will have
+  loffset = sizeof(bool) + 2*sizeof(int);
+  memmove(ldata+loffset, &keys_in1st, sizeof(int));
+  roffset += 2*sizeof(int);
+  
+  //then start checking if we are ok or we should insert the new key
+  for(int i=0; i<keys_in1st; i++){
+    if(keysComparer(key, data+loffset, LESS_THAN, keytype)){
+      //make newspace to put the key and the block pointer
+      int newspace = keysize+sizeof(int);
+      memmove(data+loffset+newspace, data+loffset, total_size-offset-newspace);
+      //copy the key
+      memmove(data+loffset, key, keysize);
+      loffset += keysize;
+      memmove(data+loffset, &newbid, sizeof(int));
+      break;
+    }
+  }
+  //done
 }
