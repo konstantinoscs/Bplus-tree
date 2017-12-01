@@ -126,12 +126,14 @@ int findLeaf(int fd, void *key, Stack *leafPath){
 
   memcpy(&isLeaf, data, sizeof(bool));
 
-  /*if (isLeaf == 1) //If the root is a leaf we are on the only leaf so the key should be here
+  if (openFiles[fd]->rootInitialized == 0) //If the root is not initialized so no insertion is done before
   {
+    int offset = sizeof(bool) + sizeof(int)*4 + keyLength;
+    memcpy(&targetBlockId, data + offset, sizeof(int));
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
     BF_Block_Destroy(&tmpBlock);
-    return rootId;
-  }*/
+    return targetBlockId;
+  }
 
   while( isLeaf == 0){  //Everytime we get in a new block to search that is not a leaf
 
