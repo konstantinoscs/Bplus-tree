@@ -26,6 +26,7 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
 
 //inserts an indexing value
 int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
+  printf("Entered index\n");
   BF_Block *curBlock;
   BF_Block_Init(&curBlock);
   //get the number of the bf file we're in
@@ -52,11 +53,14 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     offset = find_offset(data, keysize, value, keytype);
     //move existing data to the right and insert new data
     //bytes = cur_record + static -offset
+    printf("even before\n");
     memmove(data+offset+keysize+sizeof(int), data+offset, total_size-offset);
+    printf("Before\n");
     memmove(data+offset, value, keysize);
+    printf("After\n");
     offset += keysize;
     //here I should have which block is beneath
-    memmove(data+offset, &newbid ,sizeof(int));
+    memmove(data+offset, &newbid, sizeof(int));
     //now set offset in the correct position to update the number of keys=
     offset = sizeof(bool) + 2*sizeof(int);
     keys++;
@@ -164,6 +168,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
   //close/unpnin block ;)
   BF_UnpinBlock(curBlock);
   BF_Block_Destroy(&curBlock);
+  printf("Exit index val\n");
 
 
   return 1;
