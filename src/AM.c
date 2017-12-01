@@ -108,6 +108,20 @@ int typeChecker(char attrType, int attrLength, int *type, int *len){
   return AME_OK;
 }
 
+//Initializing a new blocks metadata
+void blockMetadataInit(void *data, bool isLeaf, int blockId, int nextPtr, int recordsNum){
+  memcpy(data, &isLeaf, sizeof(char));
+  data += sizeof(char);
+
+  memcpy(data, &blockId, sizeof(int)); //Writing the block's id to it
+  data += sizeof(int);
+
+  memcpy(data, &nextPtr, sizeof(int));
+  data += sizeof(int);
+
+  memcpy(data, &recordsNum, sizeof(int));
+}
+
 /************************************************
 **************Insert*******************************
 *************************************************/
@@ -215,11 +229,11 @@ bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType){
 
 //Returning the stack full with the path to the leaf and the id of the leaf
 //that has the key we are looking for or should have it at least
-int findLeaf(int fd, void *key){
+int findLeaf(int fd, void *key, Stack **leafPath){
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
 
-  int keyType, keyLength, rootId, tmpBlockPtr, keysNumber, targetBlockId;
+  int keyType, keyLength, rootId, tmpBlockPtr, keysNumber, targetBlockId, tmpBlockId;
   void *data, *tmpKey;
   bool isLeaf = 0;
 
@@ -233,18 +247,23 @@ int findLeaf(int fd, void *key){
 
   memcpy(&isLeaf, data, sizeof(bool));
 
-  if (isLeaf == 1) //If the root is a leaf we are on the only leaf so the key should be here
+  /*if (isLeaf == 1) //If the root is a leaf we are on the only leaf so the key should be here
   {
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
     BF_Block_Destroy(&tmpBlock);
     return rootId;
-  }
+  }*/
 
   while( isLeaf == 0){  //Everytime we get in a new block to search that is not a leaf
 
     int currKey = 0;  //Initialize the index of keys pointer
 
-    data += (sizeof(char) + sizeof(int)*2);  //Move the data pointer over the isLeaf byte,the block id and the next block pointer they are useless for now
+    data += sizeof(char); //Move the data pointer over the isLeaf byte
+
+    memcpy(&tmpBlockId, data, sizeof(int)); //Take the id of the block we are currently checking
+    stack_push(leafPath, tmpBlockId);  //And push it to the leaf path
+
+    data += sizeof(int)*2;  //Move the data pointer over the block id and the next block pointer they are useless now
 
     memcpy(&keysNumber, data, sizeof(int)); //Get the number of the keys that exist in this block
     data += sizeof(int);
@@ -337,7 +356,7 @@ int findMostLeftLeaf(int fd){
   return targetBlockId; //And return it
 }
 
-//findRecord finds the position [0-n] of the record that has attr1 as value1 if it exists, otherwise the position it would be
+//findRecord finds the position [0-n) of the record that has attr1 as value1 if it exists, otherwise the position it would be
 int findRecordPos(void * data, int fd, void * value1){
   int offset = 0;
   int record = 0;
@@ -366,6 +385,23 @@ int findRecordPos(void * data, int fd, void * value1){
   }
   //if the correct position was not found then it is the next one
   return record;
+}
+
+//RecordIndex->the index the new record should go [0-n), fd our openFiles descriptor, currRecords the amount of existing records in this block
+//value1,2 tha values to be inserted in the block
+void simpleInsertToLeaf(int recordIndex, int fd, void *data, int currRecords, void *value1, void *value2){
+  int offset, len1, len2;
+  len1 = openFiles[fd]->length1;
+  len2 = openFiles[fd]->length2;
+
+  offset = (sizeof(char) + sizeof(int)*3 + recordIndex*(len1 + len2));  //Get the offset to that position
+  memmove(data + offset + len1 + len2, data + offset, (currRecords - recordIndex)*(len1 + len2)); //Move all the records after that position right by recordSize (len1 + len 2)
+  memcpy(data + offset, value1, len1);  //Write to the space we made the new record
+  offset += len1;
+  memcpy(data + offset, value2, len2);
+  currRecords++;
+  offset = (sizeof(char) + sizeof(int)*2);
+  memcpy(data + offset, &currRecords, sizeof(int)); //Write the new current number of records to the block
 }
 
 /************************************************
@@ -474,22 +510,51 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
 
   data = BF_Block_GetData(tmpBlock);
 
-  char c = 1; //It is leaf so the first byte of the block is going to be 1
-  memcpy(data, &c, sizeof(char));
-  data += sizeof(char);
-
-  memcpy(data, &blockNum, sizeof(int)); //Writing the block's id to it
-  data += sizeof(int);
-
-  nextPtr = -1; //It is a leaf and the last one
-  memcpy(data, &nextPtr, sizeof(int));
-  data += sizeof(int);
-
-  recordsNum = 0; //No records yet inserted
-  memcpy(data, &recordsNum, sizeof(int));
+  //Inserting data to the root, arguments: 0 means not a leaf, blockNum is its id, -2 means no nextPtr since its not leaf, 0 records yet inserted
+  blockMetadataInit(data, 0, blockNum, -2, 0);
 
   BF_Block_SetDirty(tmpBlock);
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+
+
+  //Allocating the down right empty leaf block
+  int downRightBlock;
+  CALL_OR_DIE(BF_AllocateBlock(fd, tmpBlock));
+  CALL_OR_DIE(BF_GetBlockCounter(fd, &downRightBlock));
+  downRightBlock--;
+
+  data = BF_Block_GetData(tmpBlock);
+
+  //Inserting data to the new block, arguments: 1 means a leaf, downRightBlock is its id, -1 means its the down right leaf, 0 records yet inserted
+  blockMetadataInit(data, 1, downRightBlock, -1, 0);
+
+  BF_Block_SetDirty(tmpBlock);
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));  
+
+
+  //Allocating the down left empty leaf block
+  int downLeftBlock;
+  CALL_OR_DIE(BF_AllocateBlock(fd, tmpBlock));
+  CALL_OR_DIE(BF_GetBlockCounter(fd, &downLeftBlock));
+  downLeftBlock--;
+
+  data = BF_Block_GetData(tmpBlock);
+
+  //Inserting data to the new block, arguments: 1 means a leaf, downLeftBlock is its id, downRightBlock means its next the down right leaf, 0 records yet inserted
+  blockMetadataInit(data, 1, downLeftBlock, downRightBlock, 0);
+
+  BF_Block_SetDirty(tmpBlock);
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+
+
+  //Getting the root block to inform it about its new childs
+  CALL_OR_DIE(BF_GetBlock(fd, blockNum, tmpBlock));
+  data = BF_Block_GetData(tmpBlock);
+  data += (sizeof(char) + sizeof(int)*3);
+  memcpy(data, &downLeftBlock, sizeof(int));
+  data += (sizeof(int) + len1);
+  memcpy(data, &downRightBlock, sizeof(int));
+
 
   //Getting again the first (the metadata) block to write after the attributes info the root block id
   CALL_OR_DIE(BF_GetBlock(fd, 0, tmpBlock));
@@ -581,7 +646,7 @@ int AM_CloseIndex (int fileDesc) {
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
-  void *data1 = NULL;
+/*  void *data1 = NULL;
   void *data2 = NULL;
 
   int type1, len1, type2, len2, targetBlockId, recordIndex, nextPtr;
@@ -597,7 +662,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   type2 = openFiles[fileDesc]->type2;
   len2 = openFiles[fileDesc]->length2;
 
-  targetBlockId = findLeaf(openFiles[fileDesc]->bf_desc, value1); //Find the leaf that this value is supposed to be inserted
+  targetBlockId = findLeaf(openFiles[fileDesc]->bf_desc, value1, &nodesPath); //Find the leaf that this value is supposed to be inserted and the path getting there
 
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
@@ -616,14 +681,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
   if (currRecords < maxRecords)
   {
-    offset = (sizeof(char) + sizeof(int)*3 + recordIndex*(len1 + len2));  //Get the offset to that position
-    memmove(data1 + offset + len1 + len2, data1 + offset, (currRecords - recordIndex)*(len1 + len2)); //Move all the records after that position right by recordSize (len1 + len 2)
-    memcpy(data1 + offset, value1, len1);  //Write to the space we made the new record
-    offset += len1;
-    memcpy(data1 + offset, value2, len2);
-    currRecords++;
-    offset = (sizeof(char) + sizeof(int)*2);
-    memcpy(data1 + offset, &currRecords, sizeof(int)); //Write the new current number of records to the block
+    simpleInsertToLeaf(recordIndex, fileDesc, data1, currRecords, value1, value2);
   }else{   //If this block is full we are going to split it and divide its data
     //Allocating and initializing the new block
     CALL_OR_DIE(BF_AllocateBlock(openFiles[fileDesc]->bf_desc, tmpBlock));
@@ -636,18 +694,61 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
     data2 = BF_Block_GetData(tmpBlock);
 
-    char c = 1; //It is leaf so the first byte of the block is going to be 1
-    memcpy(data2, &c, sizeof(char));
-    data2 += sizeof(char);
+    //Inserting data to the new block, arguments: 1 means a leaf, blockId is its id,
+    //nextPtr means the next block of the new block is the one that was next to the old block, 0 records yet inserted
+    blockMetadataInit(data2, 1, blockId, nextPtr, 0); //STEFANIDI EDW EISAI
 
-    memcpy(data2, &blockId, sizeof(int)); //Writing the block's id to it
+    bool goesToOld = 0; //If 0 the new record will go to the new block else it goes to the old block
+    if (recordIndex + 1 <= maxRecords/2)
+    {
+      goesToOld = 1;
+    }
+
+    int numRecToOld = maxRecords/2;  //How many records will stay to the old block
+    if (!(maxRecords%2))  //If the max records number is odd
+    {
+      if (!goesToOld) //If the new record belongs to the new block
+      {
+        numRecToOld++;  //Then increase by one the number of records that will go to the old one to keep the balance
+      }
+    }else{  //If the max records number is even
+      if (goesToOld)  //If the new record belongs to the old block
+      {
+        numRecToOld--;  //Then decrease by one the number of records that will go to the old one to keep the balance
+      }
+    }
+
+    offset = (sizeof(char) + sizeof(int)*3);
+    int offset2 = sizeof(int);
+    int numRecToNew = maxRecords - numRecToOld; //Calculate how many records will the new block have
+
+    //Move to the start of the new block the data that is pointed by data1 (old block) increased by the number of records that
+    //should stay in the old block. The segment that is to be moved will have the size of the records that should be moved on the new block
+    memcpy(data2 + offset2, data1 + offset + numRecToOld*(len1 + len2), numRecToNew*(len1 + len2));
+
+    offset = sizeof(char) + sizeof(int)*2;
+    //Updating the block counters of the old and the new block
+    memcpy(data1 + offset, &numRecToOld, sizeof(int));
+    memcpy(data2, &numRecToNew, sizeof(int));
+
+    void *newKey = NULL;
+
     data2 += sizeof(int);
+    memcpy(newKey, data2, len1); //Take the first attribute of the new block to take its key STEFANIDI EDW EISAI
+    data2 = BF_Block_GetData(tmpBlock);
 
-    memcpy(data2, &nextPtr, sizeof(int));  //The next block of the new block is the one that was next to the old block
-    data2 += sizeof(int);
+    if (goesToOld)  //If the new record is to go to the old block
+    {
+      recordIndex = findRecordPos(data1, fileDesc, value1);  //Get the position it should go again in case something changed
+      simpleInsertToLeaf(recordIndex, fileDesc, data1, numRecToOld, value1, value2); //Make a simple insertion to the old block
+    }else{//If the new record is to go to the new block
+      recordIndex = findRecordPos(data2, fileDesc, value1);  //Get the position it should go again in case something changed
+      simpleInsertToLeaf(recordIndex, fileDesc, data2, numRecToNew, value1, value2);  //Make a simple insertion to the old block
+    }
 
-    int recordsNum = 0; //No records yet inserted
-    memcpy(data2, &recordsNum, sizeof(int));
+
+
+      
 
     //NA KANW DIRTY KAI UNPIN TA BLOCK
 
@@ -670,7 +771,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
-  BF_Block_Destroy(&tmpBlock);
+  BF_Block_Destroy(&tmpBlock);*/
 
   return AME_OK;
 }
