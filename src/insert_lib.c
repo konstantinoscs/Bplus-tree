@@ -152,9 +152,9 @@ int initialize_block(char * data, int block_id){
   return 1;
 }
 
-int find_middle_key(char * data, char * mid_key, int keysize, int keys){
+int find_middle_key(char * data, char * mid_key, int keysize, int keys_in1st){
   int offset = sizeof(bool) + 3*sizeof(int);
-  for(int i=0; i<keys; i++){
-
+  for(int i=0; i<keys_in1st; i++){
+    //if()
   }
 }
