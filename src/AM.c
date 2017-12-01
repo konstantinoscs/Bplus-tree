@@ -188,7 +188,8 @@ bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType){
 }
 
 //Returning the stack full with the path to the leaf and the id of the leaf
-//that has the key we are looking for or should have it at least
+//that has the key we are looking for or should have it at least. If called with null leafPath we didnt need
+//to keep tha path in this function call
 int findLeaf(int fd, void *key, Stack **leafPath){
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
@@ -221,7 +222,11 @@ int findLeaf(int fd, void *key, Stack **leafPath){
     data += sizeof(char); //Move the data pointer over the isLeaf byte
 
     memcpy(&tmpBlockId, data, sizeof(int)); //Take the id of the block we are currently checking
-    stack_push(leafPath, tmpBlockId);  //And push it to the leaf path
+
+    if (leafPath != NULL) //In case it is null it means that in this function call we didnt need to keep the path too
+    {
+      stack_push(leafPath, tmpBlockId);  //And push it to the leaf path
+    }
 
     data += sizeof(int)*2;  //Move the data pointer over the block id and the next block pointer they are useless now
 
@@ -706,6 +711,8 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
       simpleInsertToLeaf(recordIndex, fileDesc, data2, numRecToNew, value1, value2);  //Make a simple insertion to the old block
     }
 
+    destroy_stack(nodesPath);
+
 
 
       
@@ -767,7 +774,7 @@ void *AM_FindNextEntry(int scanDesc) {
                 if(scan->return_value == NULL){  //first time this Scan is called
                   scan->return_value = malloc(sizeof(file->length2));
                   //find the leaf block this key belongs to
-                  scan->block_num = findLeaf(scan->fileDesc,scan->value);
+                  scan->block_num = findLeaf(scan->fileDesc,scan->value, NULL);
                   BF_Block* block;
                   BF_Block_Init(&block);
                   BF_GetBlock(file->bf_desc,scan->block_num,block);
@@ -925,7 +932,7 @@ void *AM_FindNextEntry(int scanDesc) {
                 if(scan->return_value == NULL){ //first time this scan is called
                   scan->return_value = malloc(sizeof(file->length2));
                   //find the leaf block this key belongs to
-                  scan->block_num = findLeaf(scan->fileDesc,scan->value);
+                  scan->block_num = findLeaf(scan->fileDesc,scan->value, NULL);
                   scan->record_num = 0;
                   BF_Block* block;
                   BF_Block_Init(&block);
@@ -1021,7 +1028,7 @@ void *AM_FindNextEntry(int scanDesc) {
                 if(scan->return_value == NULL){ //first time this scan is called
                   scan->return_value = malloc(sizeof(file->length2));
                   //find the leaf block this key belongs to
-                  scan->block_num = findLeaf(scan->fileDesc,scan->value);
+                  scan->block_num = findLeaf(scan->fileDesc,scan->value, NULL);
                   scan->record_num = 0;
                   BF_Block* block;
                   BF_Block_Init(&block);
