@@ -39,6 +39,7 @@ typedef struct BlockMetadata
   int type2; //Type of the second attribute. 1 for int 2 for float 3 for string
   int len2; //Length of the second attribute
   int rootID //The block Id of the root
+  int rootInitialized //The root is not initialized yet, no record has been inserted
 }firstBlock;*/
 
 bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType);

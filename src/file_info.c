@@ -2,7 +2,7 @@
 
 #include "file_info.h"
 
-int insert_file(int type1, int length1, int type2, int length2){
+int insert_file(int type1, int length1, int type2, int length2, int rootInitialized){
   for(int i=0; i<20; i++){
     //if a spot is free put the info in it and return
     //its index
@@ -12,6 +12,7 @@ int insert_file(int type1, int length1, int type2, int length2){
       openFiles[i]->length1 = length1;
       openFiles[i]->type2 = type2;
       openFiles[i]->length2 = length2;
+      openFiles[i]->rootInitialized = rootInitialized;
       return i;
     }
   }
