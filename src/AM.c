@@ -69,7 +69,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   memcpy(data, &type2, sizeof(int));
   data += sizeof(int);
   memcpy(data, &len2, sizeof(int));
-  data += sizeof(int);
+  data += sizeof(int)*2;
   memcpy(data, &rootInitialized, sizeof(int));
 
   BF_Block_SetDirty(tmpBlock);
@@ -129,6 +129,8 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   data += (sizeof(int) + len1);
   memcpy(data, &downRightBlock, sizeof(int));
 
+  BF_Block_SetDirty(tmpBlock);
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
   //Getting again the first (the metadata) block to write after the attributes info the root block id
   CALL_OR_DIE(BF_GetBlock(fd, 0, tmpBlock));
@@ -143,6 +145,8 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   CALL_OR_DIE(BF_CloseFile(fd));
   //remove the file from openFiles array
   close_file(file_index);
+
+  printf("CREATEINDEX len1: %d len2: %d\n", len1, len2 );
 
   return AME_OK;
 }
@@ -185,7 +189,7 @@ int AM_OpenIndex (char *fileName) {
   memcpy(&rootId, data, sizeof(int));
   data += sizeof(int);
   memcpy(&rootInitialized, data, sizeof(int));
-
+printf("OPENINDEX len1: %d len2: %d\n", len1, len2 );
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
 
@@ -239,7 +243,8 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   type2 = openFiles[fileDesc]->type2;
   len2 = openFiles[fileDesc]->length2;
 
-  targetBlockId = findLeaf(openFiles[fileDesc]->bf_desc, value1, nodesPath); //Find the leaf that this value is supposed to be inserted and the path getting there
+  targetBlockId = findLeaf(fileDesc, value1, nodesPath); //Find the leaf that this value is supposed to be inserted and the path getting there
+printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 );
 
   BF_Block *tmpBlock, *tmpBlock1, *tmpBlock2;
   BF_Block_Init(&tmpBlock);
@@ -379,9 +384,6 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
     insert_index_val(newKey, fileDesc, nodesPath, blockId);
 
 
-    destroy_stack(nodesPath);
-
-
 
 
 
@@ -404,6 +406,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
     //prospathise na prostheiseis to prwto record tou neou mplok
   }
 
+  destroy_stack(nodesPath);
 
   //CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);

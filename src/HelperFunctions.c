@@ -274,7 +274,7 @@ int findRecordPos(void * data, int fd, void * value1){
 
 //RecordIndex->the index the new record should go [0-n), fd our openFiles descriptor, currRecords the amount of existing records in this block
 //value1,2 the values to be inserted in the block
-void simpleInsertToLeaf(int recordIndex, int fd, void *data, int currRecords, void *value1, void *value2){
+void simpleInsertToLeaf(int recordIndex, int fd, void* data, int currRecords, void *value1, void *value2){
   int offset, len1, len2;
   len1 = openFiles[fd]->length1;
   len2 = openFiles[fd]->length2;
