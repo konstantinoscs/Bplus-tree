@@ -365,7 +365,8 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
     if (keysComparer(lastKey, newKey, EQUAL, type1))
     {
-      
+      int sameKeys1 = sameKeysCount(data1, lastKey, len1, type1, currRecords1);
+
     }*/
 
     BF_Block_SetDirty(tmpBlock1);

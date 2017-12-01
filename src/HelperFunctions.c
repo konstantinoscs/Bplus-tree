@@ -336,3 +336,21 @@ void blockMetadataInit(void *data, bool isLeaf, int blockId, int nextPtr, int re
 
   memcpy(data, &recordsNum, sizeof(int));
 }
+
+//Returning how many keys are equal to the target key
+int sameKeysCount(void *data, void *targetKey, int length, int type, int currRecords){
+  int sameKeysCounter = 0;
+  int offset;
+  void *tmpKey = NULL;
+  int currIndex = 0;
+  offset = sizeof(char) + sizeof(int)*3;
+  memcpy(tmpKey, data + offset, length);
+  while(currIndex < currRecords){
+    if (keysComparer(targetKey, tmpKey, EQUAL, type))
+    {
+      sameKeysCounter++;
+    }
+    currIndex++;
+  }
+  return sameKeysCounter;
+}
