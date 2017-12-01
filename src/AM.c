@@ -5,6 +5,7 @@
 #include "file_info.h"
 #include "BoolType.h"
 #include "Scan.h"
+#include "stack.h"
 
 #define CALL_OR_DIE(call)     \
   {                           \
@@ -34,7 +35,7 @@ file_info * openFiles[20];
 /************************************************
 **************Create*******************************
 *************************************************/
-
+//Checks if the attributes are correct and if they agreee with the length given for them
 int typeChecker(char attrType, int attrLength, int *type, int *len){
   if (attrType == INTEGER)
   {
@@ -71,24 +72,24 @@ int typeChecker(char attrType, int attrLength, int *type, int *len){
 **************Insert*******************************
 *************************************************/
 
+//Takes the search key(target key) and the traversing key(tmp key), the operation (EQUAL, LESS_THAN etc) that we want to apply on the keys and the keytype
+//and returns if the operation is true or false
+//is targetkey op tmpkey?
 bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType){
   switch (operation){
     case EQUAL:
       switch (keyType){
         case 1:
           if (*(int *)targetKey == *(int *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 2:
           if (*(float *)targetKey == *(float *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 3:
-          if (!strcmp((char *)targetKey, (char *)tmpKey))
+          if (!strcmp((char *)targetKey, (char *)tmpKey)) //When comparing strings we dont need to know their length
+                                                          //because strcmp stops to the null term char
           {
             return 1;
           }
@@ -98,111 +99,82 @@ bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType){
       switch (keyType){
         case 1:
           if (*(int *)targetKey != *(int *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 2:
           if (*(float *)targetKey != *(float *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 3:
           if (strcmp((char *)targetKey, (char *)tmpKey))
-          {
             return 1;
-          }
           return 0;
       }
     case LESS_THAN:
       switch (keyType){
         case 1:
           if (*(int *)targetKey < *(int *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 2:
           if (*(float *)targetKey < *(float *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 3:
           if (strcmp((char *)targetKey, (char *)tmpKey) < 0)
-          {
             return 1;
-          }
           return 0;
       }
     case GREATER_THAN:
       switch (keyType){
         case 1:
           if (*(int *)targetKey > *(int *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 2:
           if (*(float *)targetKey > *(float *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 3:
           if (strcmp((char *)targetKey, (char *)tmpKey) > 0)
-          {
             return 1;
-          }
           return 0;
       }
     case LESS_THAN_OR_EQUAL:
       switch (keyType){
         case 1:
           if (*(int *)targetKey <= *(int *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 2:
           if (*(float *)targetKey <= *(float *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 3:
           if (strcmp((char *)targetKey, (char *)tmpKey) <= 0)
-          {
             return 1;
-          }
           return 0;
       }
     case GREATER_THAN_OR_EQUAL:
       switch (keyType){
         case 1:
           if (*(int *)targetKey >= *(int *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 2:
           if (*(float *)targetKey >= *(float *)tmpKey)
-          {
             return 1;
-          }
           return 0;
         case 3:
           if (strcmp((char *)targetKey, (char *)tmpKey) >= 0)
-          {
             return 1;
-          }
           return 0;
       }
   }
 }
 
-
+//Returning the stack full with the path to the leaf and the id of the leaf
+//that has the key we are looking for or should have it at least
 int findLeaf(int fd, void *key){
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
@@ -279,6 +251,7 @@ int findLeaf(int fd, void *key){
   return targetBlockId; //And return it
 }
 
+//Returning the id of the most left leaf
 int findMostLeftLeaf(int fd){
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
@@ -324,6 +297,37 @@ int findMostLeftLeaf(int fd){
   return targetBlockId; //And return it
 }
 
+//findRecord finds the position [0-n] of the record that has attr1 as value1 if it exists, otherwise the position it would be
+int findRecordPos(void * data, int fd, void * value1){
+  int offset = 0;
+  int record = 0;
+  int records_no;
+  int len1 = openFiles[fd]->length1;
+  int len2 = openFiles[fd]->length2;
+  int type = openFiles[fd]->type1;
+
+  //add the first static data to offset
+  offset += sizeof(bool) + 2*sizeof(int);
+  //get the number of records
+  memmove(&records_no, data+offset, sizeof(int));
+  //add to the offset 4 bytes for keys_no
+  offset += sizeof(int);
+
+  //iterate for each record
+  while(record < records_no){
+    //if the key we just got to is greater or equal to the key we are looking for
+    //return this position - its either the position it is or it should be
+    if (keysComparer(data+offset, value1, GREATER_THAN_OR_EQUAL, type))
+    {
+      return record;
+    }
+    record++;
+    offset += len1 + len2;
+  }
+  //if the correct position was not found then it is the next one
+  return record;
+}
+
 /************************************************
 **************FindNextEntry*******************************
 *************************************************/
@@ -339,9 +343,11 @@ int findRecord(void * data, int fd, void * value1){
   int type = openFiles[fd]->type1;
 
   //add the first static data to offset
-  offset += 1 + 4 + 4 + 4;
-  //the number of records is 9 bytes after the start of the block
-  memmove(&records_no, data+9, sizeof(int));
+  offset += sizeof(bool) + 2*sizeof(int);
+  //get the number of records
+  memmove(&records_no, data+offset, sizeof(int));
+  //add to the offset 4 bytes for keys_no
+  offset += sizeof(int);
 
   while(!keysComparer(value1, data+offset, EQUAL, type)){
     offset += len1 + len2;
@@ -424,6 +430,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   int blockNum, nextPtr, recordsNum;
   CALL_OR_DIE(BF_GetBlockCounter(fd, &blockNum));
   blockNum--;
+  insert_root(file_index, blockNum);
 
   data = BF_Block_GetData(tmpBlock);
 
@@ -471,7 +478,7 @@ int AM_OpenIndex (char *fileName) {
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
 
-  int type1,type2,len1,len2, fileDesc;
+  int type1,type2,len1,len2, fileDesc, rootId;
   char *data = NULL;
 
 
@@ -495,6 +502,8 @@ int AM_OpenIndex (char *fileName) {
   memcpy(&type2, data, sizeof(int));
   data += sizeof(int);
   memcpy(&len2, data, sizeof(int));
+  data += sizeof(int);
+  memcpy(&rootId, data, sizeof(int));
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
@@ -506,6 +515,7 @@ int AM_OpenIndex (char *fileName) {
     return AME_MAXFILES;
 
   insert_bfd(file_index, fileDesc);
+  insert_root(file_index, rootId);
 
   /*data += sizeof(char)*15;
   int type, len;
@@ -530,53 +540,97 @@ int AM_CloseIndex (int fileDesc) {
 
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
-/*  BF_Block *tmpBlock;
-  BF_Block_Init(&tmpBlock);
 
-  void *data = NULL;
-  CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, 0, tmpBlock));//Getting the first block
-  data = BF_Block_GetData(tmpBlock);//and its data
+  void *data1 = NULL;
+  void *data2 = NULL;
 
-  int type1, len1, type2, len2, targetBlockId;
-
-  data += sizeof(char)*15; //skip the diblus keyword
-  //Getting the attr1 and attr2 type and length from the metadata block
-  memcpy(&type1, data, sizeof(int));
-  data += sizeof(int);
-  memcpy(&len1, data, sizeof(int));
-  data += sizeof(int);
-  memcpy(&type2, data, sizeof(int));
-  data += sizeof(int);
-  memcpy(&len2, data, sizeof(int));
-
-  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
-  BF_Block_Destroy(&tmpBlock);
-
-  if (type1 == 1)
-  {
-    targetBlockId = findLeaf(openFiles[fileDesc]->bf_desc, value1);
-  }else{
-    //WE HAVE TO MAKE A FIND LEAF FOR STRINGS AND FLOATS
-  }
-
-  BF_Block_Init(&tmpBlock);
-
-  CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, targetBlockId, tmpBlock));//Getting the block that we are supposed to insert the new record
-  data = BF_Block_GetData(tmpBlock);//and its data
-
-  data += (sizeof(char) + sizeof(int)*2);
-
+  int type1, len1, type2, len2, targetBlockId, recordIndex, nextPtr;
+  int offset = 0;
   int currRecords, maxRecords;
+  Stack *nodesPath;
+  create_stack(&nodesPath);
 
-  memcpy(&currRecords, data, sizeof(int));
+  //Getting the attr1 and attr2 type and length
+  type1 = openFiles[fileDesc]->type1;
+  len1 = openFiles[fileDesc]->length1;
+
+  type2 = openFiles[fileDesc]->type2;
+  len2 = openFiles[fileDesc]->length2;
+
+  targetBlockId = findLeaf(openFiles[fileDesc]->bf_desc, value1); //Find the leaf that this value is supposed to be inserted
+
+  BF_Block *tmpBlock;
+  BF_Block_Init(&tmpBlock);
+  CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, targetBlockId, tmpBlock));//Getting the block that we are supposed to insert the new record
+  data1 = BF_Block_GetData(tmpBlock);//and its data
+
+  offset = (sizeof(char) + sizeof(int));
+
+  memcpy(&nextPtr, data1 + offset, sizeof(int));// Getting the nextPtr of the targed block
+  offset += sizeof(int);
+  memcpy(&currRecords, data1 + offset, sizeof(int)); //Getting the amount of records that exist in this block
 
   maxRecords = (BF_BLOCK_SIZE - (sizeof(char) + sizeof(int)*3))/(len1 + len2);
 
-  //An oxi gemato apla valto sto telos afou traversareis an gemato parta arxidia mou kai kanta soupa
+  recordIndex = findRecordPos(data1, fileDesc, value1);  //Get the position it should go
+
+  if (currRecords < maxRecords)
+  {
+    offset = (sizeof(char) + sizeof(int)*3 + recordIndex*(len1 + len2));  //Get the offset to that position
+    memmove(data1 + offset + len1 + len2, data1 + offset, (currRecords - recordIndex)*(len1 + len2)); //Move all the records after that position right by recordSize (len1 + len 2)
+    memcpy(data1 + offset, value1, len1);  //Write to the space we made the new record
+    offset += len1;
+    memcpy(data1 + offset, value2, len2);
+    currRecords++;
+    offset = (sizeof(char) + sizeof(int)*2);
+    memcpy(data1 + offset, &currRecords, sizeof(int)); //Write the new current number of records to the block
+  }else{   //If this block is full we are going to split it and divide its data
+    //Allocating and initializing the new block
+    CALL_OR_DIE(BF_AllocateBlock(openFiles[fileDesc]->bf_desc, tmpBlock));
+    int blockId;
+    CALL_OR_DIE(BF_GetBlockCounter(openFiles[fileDesc]->bf_desc, &blockId));
+    blockId--;
+
+    offset = (sizeof(char) + sizeof(int));
+    memcpy(data1, &blockId, sizeof(int));  //Set as next of the old block the new block
+
+    data2 = BF_Block_GetData(tmpBlock);
+
+    char c = 1; //It is leaf so the first byte of the block is going to be 1
+    memcpy(data2, &c, sizeof(char));
+    data2 += sizeof(char);
+
+    memcpy(data2, &blockId, sizeof(int)); //Writing the block's id to it
+    data2 += sizeof(int);
+
+    memcpy(data2, &nextPtr, sizeof(int));  //The next block of the new block is the one that was next to the old block
+    data2 += sizeof(int);
+
+    int recordsNum = 0; //No records yet inserted
+    memcpy(data2, &recordsNum, sizeof(int));
+
+    //NA KANW DIRTY KAI UNPIN TA BLOCK
+
+    //An einai gemato tote prepei na to spasoume se 2 nea blok kai na mirasoume tis times se afta. me kapion tropo na pame ston apo panw komvo tou kai
+    //na tsekaroume ean einai gematos kai aftos. An oxi vazoume to neo klidi ston epanw kai ola kala an einai gematos pali ton spame kai kanoume tin proigoumeni
+    //diadikasia apo tin arxi.
+
+    //While to block einai full
+    //pare to key pou thes na kaneis insert
+    //vres prin apo pio record prepei na mpei (se pia thesi)
+    //kane allocate neo mplok
+    //metafere ta misa records sto neo mplok ipologizontas oti to neo exei idi mpei kai meta kanto apli insert se ena apta dio mplok (sto swsto)
+    //(ean i thesi pou tha empene einai megaliteri tou max records number / 2 tote paei sto 2o)
+    //ftiakse tous metrites record sto neo kai sto palio mplok swstous
+    //pare to prwto record tou neou mplok
+    //popare apo tin stack
+    //pigene sto mplok pou popares
+    //prospathise na prostheiseis to prwto record tou neou mplok
+  }
 
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
-  BF_Block_Destroy(&tmpBlock);*/
+  BF_Block_Destroy(&tmpBlock);
 
   return AME_OK;
 }

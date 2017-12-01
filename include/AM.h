@@ -41,6 +41,8 @@ typedef struct BlockMetadata
   int rootID //The block Id of the root
 }firstBlock;*/
 
+bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType);
+
 void AM_Init( void );
 
 
