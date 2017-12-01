@@ -27,6 +27,11 @@ int openScansInsert(Scan* scan);  //inserts a Scan in openScans[] if possible an
 int openScansFindEmptySlot();     //finds the first empty slot in openScans[]
 bool openScansFull();             //checks
 
+//allocate and initialize a Scan, return a pointer to it
+
+//allocate and initialize a Scan, return a pointer to it
+Scan* ScanInit(int fileDesc,int op,void* value);
+
 //look at the next record and return its offset inside the data, makes sure you update the block if you got out of its bounds and that blocks data
 int ScanNextRecord(Scan*,BF_Block** block_ptr,char** data);
 
