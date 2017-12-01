@@ -5,10 +5,6 @@
 
 extern int AM_errno;
 
-typedef char bool;
-#define true 1
-#define false 0
-
 #define AME_OK 0
 #define AME_EOF -1
 #define AME_WRONGARGS -2
@@ -25,6 +21,7 @@ typedef char bool;
 
 #include "bf.h"
 #include "defn.h"
+#include "BoolType.h"
 
 typedef struct BlockMetadata
 {
