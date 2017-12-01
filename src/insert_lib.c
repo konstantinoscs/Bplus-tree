@@ -32,7 +32,7 @@ int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
   int keysize =  openFiles[fileDesc]->length1;
   int total_size = offset + keys*keysize + (keys+1)*sizeof(int);
 
-  if(total_size = block_has_space(data, keysize)){
+  if(block_has_space(data, keysize, keys)){
     //insert in current block
     offset = find_offset(data, keysize, value, keytype);
     //move existing data to the right and insert new data
@@ -50,6 +50,8 @@ int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
   }
   else if(is_root(block_no, fileDesc)){
     //split and update root
+    BF_Block *newBlock;
+    BF_Block_Init(&newBlock);
   }
   else{
     //split and pass one level up
@@ -61,7 +63,7 @@ int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
   return 1;
 }
 
-//block_has space will return the size of block if it's enough :)
+//preety straight forward
 int block_has_space(char * data, int keysize, int keys){
   int avail_space = BF_BLOCK_SIZE;
   //add the first static data to offset
