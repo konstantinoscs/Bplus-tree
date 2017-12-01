@@ -395,12 +395,13 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
 
 int AM_OpenIndexScan(int fileDesc, int op, void *value) {
-	return openScansInsert(ScanInit(fileDesc,op,value));
+	//return openScansInsert(ScanInit(fileDesc,op,value));
+  return AME_OK;
 }
 
 
 void *AM_FindNextEntry(int scanDesc) {
-  Scan* scan = openScans[scanDesc];
+  /*Scan* scan = openScans[scanDesc];
   file_info* file = openFiles[scan->fileDesc];
 
   if(scan->ScanIsOver){
@@ -710,15 +711,15 @@ void *AM_FindNextEntry(int scanDesc) {
                   BF_Block_Destroy(&block);
                   return scan->return_value;
                 }
-  }
+  }*/
 }
 
 int AM_CloseIndexScan(int scanDesc) {
-  Scan* scan = openScans[scanDesc];
+  /*Scan* scan = openScans[scanDesc];
   if(scan->return_value != NULL)
     free(scan->return_value);
   free(scan);
-  openScans[scanDesc] = NULL;
+  openScans[scanDesc] = NULL;*/
   return AME_OK;
 }
 
