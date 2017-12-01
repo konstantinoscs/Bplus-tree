@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "bf.h"
@@ -18,7 +19,10 @@ int initialize_block(char * data, int block_id, int recs);
 
 int find_middle_key(char * data, char * mid_key, void * key, int keytype,
   int keysize, int keys_in1st);
-int partition();
+
+int partition(char *ldata, char *rdata, char * mid_key, void * key,
+  int keytype, int keysize, int keys_in1st, int keys_in2nd, int offset,
+  int newbid, int total_size);
 
 //inserts an indexing value
 int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
@@ -76,13 +80,12 @@ int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
     //obviously in root there will be 1 key
     char * mid_key = malloc(keysize);
     //get key to up here
-    //find middle key,
-    find_middle_key(data, mid_key, value, keytype, keysize, keys_in1st);
+    //find middle key and keep offset in left
+    int offset_inl = find_middle_key(data, mid_key, value, keytype, keysize, keys_in1st);
     //partition :)
-    partition();
-    //workds also for the recursion
-    //magic exists :)
-    //copy half of the values
+
+    partition(data, new_data, mid_key, value, keytype, keysize, keys_in1st,
+      keys_in2nd, offset_inl, newbid, total_size);
     //create new root_id  //split and update root
     BF_Block *newroot;
     BF_Block_Init(&newroot);
@@ -92,7 +95,7 @@ int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
     root_id--;
     char * root_data = BF_Block_GetData(newroot);
     initialize_block(root_data, root_id, 1);
-    //offset is already sizeof(bool) + 3*sizeof(int)
+    //offset is already sizeof(bool) + 3*sizeof(int) (arithmetic is ok here)
     memmove(root_data+offset, &block_no, sizeof(int));
     offset += sizeof(int);
     memmove(root_data+offset, mid_key, keysize);
@@ -139,15 +142,22 @@ int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
     char * mid_key = malloc(keysize);
     //get key to up here
     //find middle key,
-    find_middle_key(data, mid_key, value, keytype, keysize, keys_in1st);
+    int offset_inl = find_middle_key(data, mid_key, value, keytype, keysize, keys_in1st);
     //partition :)
-    partition();
+
+    partition(data, new_data, mid_key, value, keytype, keysize, keys_in1st,
+      keys_in2nd, offset_inl, newbid, total_size);
 
     //cleanup
     BF_Block_SetDirty(newBlock);
     BF_UnpinBlock(newBlock);
     BF_Block_Destroy(&newBlock);
     //pop stack and call recursion
+    if(stack_pop((*stack))){
+      printf("Invalid stack\n");
+    }
+    //recursive call
+    insert_index_val(mid_key, fileDesc, stack, new_id);
     free(mid_key);
   }
 
@@ -159,7 +169,7 @@ int insert_index_val(void *value, int fileDesc, Stack** stack, int newbid){
   return 1;
 }
 
-//preety straight forward
+//pretty straight forward
 int block_has_space(char * data, int keysize, int keys){
   int avail_space = 0;
   //add the first static data to offset
@@ -258,12 +268,12 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
   offset += sizeof(int);
   roffset += sizeof(int);
   //copy all the key/pointer pairs
-  for(int=0; i<keys_in2nd; i++){
+  for(int i=0; i<keys_in2nd; i++){
     //copy the key
-    if(keysComparer(key, data+loffset, LESS_THAN, keytype)){
-      memmove(radata+roffset, key, keysize);
+    if(keysComparer(key, ldata+loffset, LESS_THAN, keytype)){
+      memmove(rdata+roffset, key, keysize);
       roffset += keysize;
-      memmove(radata+roffset, &newbid, sizeof(int));
+      memmove(rdata+roffset, &newbid, sizeof(int));
       roffset += sizeof(int);
     }
     else{
@@ -281,20 +291,21 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
   //first update the number of keys the left block will have
   loffset = sizeof(bool) + 2*sizeof(int);
   memmove(ldata+loffset, &keys_in1st, sizeof(int));
-  roffset += 2*sizeof(int);
-  
+  loffset += 2*sizeof(int);
+
   //then start checking if we are ok or we should insert the new key
   for(int i=0; i<keys_in1st; i++){
-    if(keysComparer(key, data+loffset, LESS_THAN, keytype)){
+    if(keysComparer(key, ldata+loffset, LESS_THAN, keytype)){
       //make newspace to put the key and the block pointer
       int newspace = keysize+sizeof(int);
-      memmove(data+loffset+newspace, data+loffset, total_size-offset-newspace);
+      memmove(ldata+loffset+newspace, ldata+loffset, total_size-offset-newspace);
       //copy the key
-      memmove(data+loffset, key, keysize);
+      memmove(ldata+loffset, key, keysize);
       loffset += keysize;
-      memmove(data+loffset, &newbid, sizeof(int));
+      memmove(ldata+loffset, &newbid, sizeof(int));
       break;
     }
   }
+  return 1;
   //done
 }
