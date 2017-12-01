@@ -7,6 +7,7 @@
 #include "Scan.h"
 #include "stack.h"
 #include "HelperFunctions.h"
+#include "insert_lib.h"
 
 int AM_errno = AME_OK;
 

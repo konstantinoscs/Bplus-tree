@@ -58,6 +58,9 @@ int findMostLeftLeaf(int fd);
 //findRecord finds the position [0-n) of the record that has attr1 as value1 if it exists, otherwise the position it would be
 int findRecordPos(void * data, int fd, void * value1);
 
+//RecordIndex->the index the new record should go [0-n), fd our openFiles descriptor, currRecords the amount of existing records in this block
+//value1,2 tha values to be inserted in the block
+void simpleInsertToLeaf(int recordIndex, int fd, void *data, int currRecords, void *value1, void *value2);
 
 /***************************************************************************************************************************
 **************CREATE*********************************************************************************************************
