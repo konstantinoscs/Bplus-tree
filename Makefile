@@ -1,10 +1,6 @@
 am_main1:
 	@echo " Compile am_main1 ...";
-<<<<<<< HEAD
-	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/am_main1.c ./src/AM.c ./src/file_info.c ./src/Scan.c -lbf -o am_main1 -g
-=======
-	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/am_main1.c ./src/AM.c ./src/file_info.c ./src/stack.c -lbf -o am_main1 -g
->>>>>>> 3d946d26a95bf3ed87e922174824608e7e8a6663
+	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/am_main1.c ./src/AM.c ./src/file_info.c ./src/Scan.c ./src/stack.c -lbf -o am_main1 -g
 
 am_main2:
 	@echo " Compile am_main2 ...";
