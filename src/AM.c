@@ -966,6 +966,11 @@ void *AM_FindNextEntry(int scanDesc) {
 }
 
 int AM_CloseIndexScan(int scanDesc) {
+  Scan* scan = openScans[scanDesc];
+  if(scan->return_value != NULL)
+    free(scan->return_value);
+  free(scan);
+  openScans[scanDesc] = NULL;
   return AME_OK;
 }
 
