@@ -342,7 +342,7 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
     memcpy(data1 + offset, &numRecToOld, sizeof(int));
     memcpy(data2, &numRecToNew, sizeof(int));
 
-    void *newKey = NULL;
+    char *newKey = malloc(len1);
 
     data2 += sizeof(int);
     memcpy(newKey, data2, len1); //Take the first attribute of the new block to take its key STEFANIDI EDW EISAI
@@ -372,7 +372,7 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
       int sameKeys1 = sameKeysCount(data1, lastKey, len1, type1, currRecords1);
 
     }*/
-
+    free(newKey);
     BF_Block_SetDirty(tmpBlock1);
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock1));
 
