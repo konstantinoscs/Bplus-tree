@@ -36,7 +36,7 @@ void print_block(char * data){
   for(int i=0; i< recordsNum; i++){
     //printf("k%d ", *((int *)data+offset));
     memmove(&temp, data +offset, sizeof(int));
-    printf("p%d ", temp);
+    printf("k%d ", temp);
     offset += sizeof(int);
     //printf("p%d ", *((int *)data+offset));
     memmove(&temp, data +offset, sizeof(int));
@@ -234,6 +234,7 @@ int block_has_space(char * data, int keysize, int keys){
   return avail_space < 0 ? 0 : 1;
 }
 
+//find offset works fine!!!
 //find_offset takes a key and finds the byte position where it should be put
 int find_offset(char* data, int keysize, void *key, int keytype, int keys){
  /*AM 1400192 STRONGLY OPPOSES the use of "bool"*/
