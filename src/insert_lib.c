@@ -171,6 +171,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     //don't forget the metadata
 
     //cleanup
+    BF_Block_SetDirty(curBlock);
     BF_Block_SetDirty(newBlock);
     BF_Block_SetDirty(newroot);
     BF_UnpinBlock(newBlock);
@@ -276,6 +277,7 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
   offset += 3*sizeof(int);
   int size1 = openFiles[fileDesc]->length1;
   int size2 = openFiles[fileDesc]->length2;
+  int bf_no = openFiles[fileDesc]->bf_desc;
   int total_size = offset + records*(size1+size2);
 
   if(leaf_block_has_space(records, size1, size2)){
@@ -286,17 +288,41 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     memmove(data+offset, value1, size1);
     offset += size1;
     memmove(data+offset, value2, size2);
-    
+
     //now set offset in the correct position to update the number of records
     offset = sizeof(bool) + 2*sizeof(int);
     records++;
     memmove(data+offset, &records, sizeof(int));
   }
   else{
-    int offset_inl = 0;
-    //split block and insert index val
-  }
+    //split block and insert record
+    BF_Block *newBlock;
+    BF_Block_Init(&newBlock);
+    BF_AllocateBlock(bf_no, newBlock);
+    int new_id = 0;
+    BF_GetBlockCounter(bf_no, &new_id);
+    new_id--;
+    char * new_data = BF_Block_GetData(newBlock);
+    int nextPtr = 0;
+    offset = sizeof(bool)+sizeof(int);
+    memmove(&nexPtr, data+offset, sizeof(int));
+    //initialize leaf block
+    blockMetadataInit(new_data, 1, new_id, nextPtr, 0);
 
+    int recs_in2nd = (records+1)%2 ? records/2 +1 : (records+1)/2;
+    int recs_in1st = records +1 - recs_in2nd;
+    //int offset_inl = find_middle();
+
+    //partition with caution for same values
+
+    //set new records;
+    //cleanup
+    BF_Block_SetDirty(newBlock);
+    BF_UnpinBlock(newBlock);
+    BF_Block_Destroy(&newBlock);
+
+  }
+  BF_Block_SetDirty(curBlock);
   BF_UnpinBlock(curBlock);
   BF_Block_Destroy(&curBlock);
 
@@ -464,3 +490,58 @@ int findOffsetInLeaf(char* data, void *value, int fd){
   }
   return offset;
 }
+
+int find_middle_record(char * data, char * mid_value1, void * value1, int type1,
+  int size1, int recs_in1st){
+
+    int offset = sizeof(bool) + 3*sizeof(int);
+    int past_val1 = 0;
+    for(int i=0; i<recs_in1st; i++){
+      if(past_val1 || keysComparer(data+offset, value1, LESS_THAN, type1))
+        offset += size1 + size2;
+      else
+        past_key = 1;
+    }
+    //copy the correct middle key to the variable
+    if(past_val1 || keysComparer(data+offset, value1, LESS_THAN_OR_EQUAL, type1)){
+      memmove(mid_value1, data+offset, size1);
+      offset += size1 + size2;
+    }
+    else{
+      memmove(mid_value1, value1, size1);
+    }
+    //restart offset in the blck
+    offset = sizeof(bool) + 3*sizeof(int);
+
+    //if middle value is equal to first find the next bigger
+    if(keysComparer(data+offset, mid_value1, EQUAL, type1)){
+      while(keysComparer(data+offset, mid_value1, LESS_THAN_OR_EQUAL, type1)){
+        offset += size1 + size2;
+
+      }
+      //copy the new mid value
+      memmove(mid_value1, data+offset, size1);
+    }
+     return 1;
+}
+
+int leaf_partition(char * ldata, char * rdata, void *mid_value1, int type1,
+  int size1, int size2){
+
+  int recs_in1st =0;
+  
+}
+
+/*2
+222256
+
+22222 56
+
+2
+1 22222
+
+1 222222
+
+5
+
+22222 5*/
