@@ -357,3 +357,53 @@ int sameKeysCount(void *data, void *targetKey, int length, int type, int currRec
   }
   return sameKeysCounter;
 }
+
+void print_metadata(char* data){
+  char * di[7];
+  int type1; //Type of the first(key) attribute. 1 for int 2 for float 3 for string
+  int len1; //Length of the first attribute
+  int type2; //Type of the second attribute. 1 for int 2 for float 3 for string
+  int len2; //Length of the second attribute
+  int rootID; //The block Id of the root
+  int rootInitialized; //The root is not initialized yet, no record has been inserted
+  int offset =0;
+
+  memmove(&type1, data, sizeof(int));
+  offset+=sizeof(int);
+  memmove(&len1, data+offset, sizeof(int));
+  offset+=sizeof(int);
+  memmove(&type2, data+offset, sizeof(int));
+  offset+=sizeof(int);
+  memmove(&len2, data+offset, sizeof(int));
+  offset+=sizeof(int);
+  memmove(&rootID, data+offset, sizeof(int));
+  offset+=sizeof(int);
+  memmove(&rootInitialized, data+offset, sizeof(int));
+  offset+=sizeof(int);
+  printf("Printing first block\n");
+  printf("Type1 %d\n", type1);
+  printf("Len1 %d\n", len1);
+  printf("Type2 %d\n", type2);
+  printf("Len2 %d\n", len2);
+  printf("rootID\n", rootID);
+
+}
+
+void print_leaf(char * data){
+  int offset = 0;
+  bool isleaf =0;
+  int block_id = 0;
+  int nextPtr=0;
+  int recordsNum;
+  memmove(&isleaf, data, sizeof(bool))
+  offset+= sizeof(bool);
+  memmove(&block_id, data+offset, sizeof(int));
+  offset+= sizeof(int);
+  memmove(&nextPtr, data+offset, sizeof(int));
+  offset += sizeof(int);
+  memmove(&recordsNum, data+offset, sizeof(int));
+  printf("Printing leaf block with id %d\n", block_id);
+  printf("Is leaf: %d\n", isleaf);
+  printf("Nexptr %d\n", nextPtr);
+  printf("recordsNum %d", recordsNum);
+}
