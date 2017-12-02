@@ -42,13 +42,13 @@ Scan* ScanInit(int fileDesc,int op,void* value){
 //look at the next record and return its offset inside the data, makes sure you update the block if you got out of its bounds and that blocks data
 int ScanNextRecord(Scan* scan, BF_Block** block_ptr,char** data_ptr){
 	scan->record_num++;
-	int* num_of_records;
-	memcpy(num_of_records,*data_ptr+sizeof(char)+2*sizeof(int),sizeof(int));
+	int num_of_records;
+	memcpy(&num_of_records,(*data_ptr)+sizeof(char)+2*sizeof(int),sizeof(int));
 	//is the next record in this or the next block?
-	if(scan->record_num >= *num_of_records){  //if its in the next block
-		int* next_block_num;
-		memcpy(next_block_num,*data_ptr+sizeof(char)+sizeof(int),sizeof(int));
-		if(*next_block_num == -1){  //if there is no next block, end Scan
+	if(scan->record_num >= num_of_records){  //if its in the next block
+		int next_block_num;
+		memcpy(&next_block_num,(*data_ptr)+sizeof(char)+sizeof(int),sizeof(int));
+		if(next_block_num == -1){  //if there is no next block, end Scan
 			free(scan->return_value);
 			scan->return_value = NULL;
 			scan->ScanIsOver = true;
@@ -62,10 +62,10 @@ int ScanNextRecord(Scan* scan, BF_Block** block_ptr,char** data_ptr){
 		//open the next block
 		BF_Block_Init(block_ptr);
 		file_info* file = openFiles[scan->fileDesc];
-		BF_GetBlock(file->bf_desc,*next_block_num,*block_ptr);
+		BF_GetBlock(file->bf_desc,next_block_num,*block_ptr);
 		*data_ptr = BF_Block_GetData(*block_ptr);
 		//update scan counters
-		scan->block_num = *next_block_num;
+		scan->block_num = next_block_num;
 		scan->record_num = 0;
 		return sizeof(char)+3*sizeof(int);	//return the offset of the first record of the next block
 	}
