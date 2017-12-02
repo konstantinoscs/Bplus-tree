@@ -11,7 +11,7 @@ am_main3:
 	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/am_main1.c ./src/AM.c ./src/file_info.c ./src/Scan.c ./src/stack.c ./src/insert_lib.c ./src/HelperFunctions.c  -lbf -o am_main3 -g
 
 test:
-	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/am_main1.c ./src/AM.c ./src/file_info.c ./src/Scan.c ./src/stack.c ./src/insert_lib.c ./src/HelperFunctions.c  -lbf -o test.c -g
+	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/test.c ./src/AM.c ./src/file_info.c ./src/Scan.c ./src/stack.c ./src/insert_lib.c ./src/HelperFunctions.c  -lbf -o test -g
 
 
 bf_main1:

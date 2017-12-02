@@ -1,8 +1,9 @@
 build/*
 bin/*
-examples/*
 lib/*
 EMP*
 am_main1
 am_main2
 am_main3
+test
+TestBase
