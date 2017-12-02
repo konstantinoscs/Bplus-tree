@@ -18,8 +18,6 @@ void main(void){
     printf("(((%s)))", str);
 
     */
-
-
     AM_InsertEntry(fd,(void*) &i, (void*) &i);
   }
 
