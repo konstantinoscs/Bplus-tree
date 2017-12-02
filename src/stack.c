@@ -37,3 +37,8 @@ int destroy_stack(Stack * stack){
   free(stack->keys);
   free(stack);
 }
+
+void print_stack(Stack * stack){
+  for(int =0; i<stack->elems; i++)
+    printf("Stack[%d] = %d\n", i,stack[i]);
+}

@@ -385,7 +385,7 @@ void print_metadata(char* data){
   printf("Len1 %d\n", len1);
   printf("Type2 %d\n", type2);
   printf("Len2 %d\n", len2);
-  printf("rootID\n", rootID);
+  printf("rootID %d\n", rootID);
 
 }
 
@@ -395,7 +395,7 @@ void print_leaf(char * data){
   int block_id = 0;
   int nextPtr=0;
   int recordsNum;
-  memmove(&isleaf, data, sizeof(bool))
+  memmove(&isleaf, data, sizeof(bool));
   offset+= sizeof(bool);
   memmove(&block_id, data+offset, sizeof(int));
   offset+= sizeof(int);
