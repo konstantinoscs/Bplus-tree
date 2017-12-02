@@ -456,7 +456,8 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
     if(keysComparer(key, ldata+loffset, LESS_THAN, keytype)){
       //make newspace to put the key and the block pointer
       int newspace = keysize+sizeof(int);
-      memmove(ldata+loffset+newspace, ldata+loffset, total_size-offset-newspace);
+      //memmove(ldata+loffset+newspace, ldata+loffset, total_size-offset-newspace);
+      memmove(ldata+loffset+newspace, ldata+loffset, (keys_in1st-i-1)*newspace);
       //copy the key
       memmove(ldata+loffset, key, keysize);
       loffset += keysize;
@@ -529,7 +530,7 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value1, int type1,
   int size1, int size2){
 
   int recs_in1st =0;
-  
+
 }
 
 /*2
