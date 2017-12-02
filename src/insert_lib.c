@@ -188,7 +188,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     BF_GetBlock(bf_no, 0, newBlock);
     new_data = BF_Block_GetData(newBlock);
     //memmove the new root id now
-    offset = sizeof("DIBLU$") + 4*(sizeof(int));
+    offset = 15 + 4*(sizeof(int));
     memmove(new_data+offset, &root_id, sizeof(int));
     //changed root if so set Dirty
     BF_Block_SetDirty(newBlock);
