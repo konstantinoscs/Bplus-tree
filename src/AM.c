@@ -244,7 +244,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   len2 = openFiles[fileDesc]->length2;
 
   targetBlockId = findLeaf(fileDesc, value1, nodesPath); //Find the leaf that this value is supposed to be inserted and the path getting there
-//printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 );
+printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 );
 
   BF_Block *tmpBlock, *tmpBlock1, *tmpBlock2;
   BF_Block_Init(&tmpBlock);
@@ -309,14 +309,30 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
     //nextPtr means the next block of the new block is the one that was next to the old block, 0 records yet inserted
     blockMetadataInit(data2, 1, blockId, nextPtr, 0); //STEFANIDI EDW EISAI
 
-    int numRecToNew = maxRecords/2+1;
-    int numRecToOld = maxRecords-numRecToNew;
-    bool goesToNew = 1; //if 0 go to old block
-    if (recordIndex < numRecToOld)
-      goesToNew = 0;  //go to old
+    bool goesToOld = 0; //If 0 the new record will go to the new block else it goes to the old block
+    if (recordIndex + 1 <= maxRecords/2)
+    {
+      goesToOld = 1;
+    }
 
-    int offset2 = sizeof(char)+3*sizeof(int);
-    offset = sizeof(char) + 3*sizeof(int);
+    int numRecToOld = maxRecords/2;  //How many records will stay to the old block
+    if (!(maxRecords%2))  //If the max records number is odd
+    {
+      if (!goesToOld) //If the new record belongs to the new block
+      {
+        numRecToOld++;  //Then increase by one the number of records that will go to the old one to keep the balance
+      }
+    }else{  //If the max records number is even
+      if (goesToOld)  //If the new record belongs to the old block
+      {
+        numRecToOld--;  //Then decrease by one the number of records that will go to the old one to keep the balance
+      }
+    }
+
+    offset = (sizeof(char) + sizeof(int)*3);
+    int offset2 = sizeof(int);
+    int numRecToNew = maxRecords - numRecToOld; //Calculate how many records will the new block have
+
     //Move to the start of the new block the data that is pointed by data1 (old block) increased by the number of records that
     //should stay in the old block. The segment that is to be moved will have the size of the records that should be moved on the new block
     memcpy(data2 + offset2, data1 + offset + numRecToOld*(len1 + len2), numRecToNew*(len1 + len2));
@@ -324,9 +340,15 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
     offset = sizeof(char) + sizeof(int)*2;
     //Updating the block counters of the old and the new block
     memcpy(data1 + offset, &numRecToOld, sizeof(int));
-    memcpy(data2 + offset, &numRecToNew, sizeof(int));
+    memcpy(data2, &numRecToNew, sizeof(int));
 
-    if (!goesToNew)  //If the new record goes to the old block
+    char *newKey = malloc(len1);
+
+    data2 += sizeof(int);
+    memcpy(newKey, data2, len1); //Take the first attribute of the new block to take its key STEFANIDI EDW EISAI
+    data2 = BF_Block_GetData(tmpBlock2);
+
+    if (goesToOld)  //If the new record is to go to the old block
     {
       recordIndex = findRecordPos(data1, fileDesc, value1);  //Get the position it should go again in case something changed
       simpleInsertToLeaf(recordIndex, fileDesc, data1, numRecToOld, value1, value2); //Make a simple insertion to the old block
@@ -334,12 +356,9 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
       recordIndex = findRecordPos(data2, fileDesc, value1);  //Get the position it should go again in case something changed
       simpleInsertToLeaf(recordIndex, fileDesc, data2, numRecToNew, value1, value2);  //Make a simple insertion to the old block
     }
-     //Take the first attribute of the new block as a key to its parent
-    char *newKey = malloc(len1);
-    memcpy(newKey, data2+sizeof(char)+3*sizeof(int), len1);
 
-    /*int currRecords1, currRecords2;
-    void *lastKey = NULL;
+    int currRecords1, currRecords2;
+    char *lastKey = malloc(len1);
 
     offset = sizeof(char) + sizeof(int)*2;
     memcpy(&currRecords1, data1 + offset, sizeof(int));
@@ -351,10 +370,26 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
     if (keysComparer(lastKey, newKey, EQUAL, type1))
     {
       int sameKeys1 = sameKeysCount(data1, lastKey, len1, type1, currRecords1);
+      int sameKeys2 = sameKeysCount(data2, newKey, len1, type1, currRecords2);
 
-    }*/
+      if ((maxRecords - currRecords1) >= (sameKeys1 + sameKeys2))
+      {
+        offset = sizeof(char) + sizeof(int)*3 + currRecords1*(len1 + len2);
+        offset2 = sizeof(char) + sizeof(int)*3;
+        memcpy(data1 + offset, data2 + offset2, sameKeys2*(len1 + len2));
+        currRecords1 += sameKeys2;
+        currRecords2 -= sameKeys2;
+        memcpy(data2 + offset2, data2 + offset2 + sameKeys2*(len1 +len2), currRecords2*(len1 + len2));
+        offset = sizeof(char) + sizeof(int)*2;
+        offset2 = sizeof(char) + sizeof(int)*2;
+        memcpy(data1 + offset, currRecords1, sizeof(int));
+        memcpy(data2 + offset2, currRecords2, sizeof(int));
+      }else
+      {
+        
+      }
 
-
+    }
     BF_Block_SetDirty(tmpBlock1);
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock1));
 
@@ -364,6 +399,10 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
     //Inserting to the index node(s) the first value of the new block, given the files descriptor, the path and the id of the new leaf
     insert_index_val(newKey, fileDesc, nodesPath, blockId);
     free(newKey);
+
+
+
+
 
     //NA KANW DIRTY KAI UNPIN TA BLOCK
 
