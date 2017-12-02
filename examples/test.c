@@ -7,7 +7,7 @@
 
 void main(void){
   AM_Init();
-  AM_CreateIndex("TestBase", STRING, 5, INTEGER, sizeof(int));
+  AM_CreateIndex("TestBase", INTEGER, 4, INTEGER, sizeof(int));
   int fd = AM_OpenIndex("TestBase");
 
 

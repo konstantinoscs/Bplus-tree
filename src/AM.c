@@ -342,7 +342,7 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
     memcpy(newKey, data2+sizeof(char)+3*sizeof(int), len1); //newKey will be the 1st key of the new(right) block
 
     /*int currRecords1, currRecords2;
-    void *lastKey = NULL;
+    char *lastKey = malloc(len1);
 
     offset = sizeof(char) + sizeof(int)*2;
     memcpy(&currRecords1, data1 + offset, sizeof(int));
@@ -354,6 +354,24 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
     if (keysComparer(lastKey, newKey, EQUAL, type1))
     {
       int sameKeys1 = sameKeysCount(data1, lastKey, len1, type1, currRecords1);
+      int sameKeys2 = sameKeysCount(data2, newKey, len1, type1, currRecords2);
+
+      if ((maxRecords - currRecords1) >= (sameKeys1 + sameKeys2))
+      {
+        offset = sizeof(char) + sizeof(int)*3 + currRecords1*(len1 + len2);
+        offset2 = sizeof(char) + sizeof(int)*3;
+        memcpy(data1 + offset, data2 + offset2, sameKeys2*(len1 + len2));
+        currRecords1 += sameKeys2;
+        currRecords2 -= sameKeys2;
+        memcpy(data2 + offset2, data2 + offset2 + sameKeys2*(len1 +len2), currRecords2*(len1 + len2));
+        offset = sizeof(char) + sizeof(int)*2;
+        offset2 = sizeof(char) + sizeof(int)*2;
+        memcpy(data1 + offset, currRecords1, sizeof(int));
+        memcpy(data2 + offset2, currRecords2, sizeof(int));
+      }else
+      {
+        
+      }
 
     }*/
 

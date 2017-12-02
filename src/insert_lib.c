@@ -33,10 +33,10 @@ void print_block(char * data){
   memmove(&temp, data +offset, sizeof(int));
   printf("p%d ", temp);
   offset+= sizeof(int);
-  for(int i=0; i< recordsNum; i++){
+  for(int i=0; i<recordsNum; i++){
     //printf("k%d ", *((int *)data+offset));
     memmove(&temp, data +offset, sizeof(int));
-    printf("p%d ", temp);
+    printf("k%d ", temp);
     offset += sizeof(int);
     //printf("p%d ", *((int *)data+offset));
     memmove(&temp, data +offset, sizeof(int));
@@ -109,6 +109,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     memmove(data+offset, &keys, sizeof(int));
     //done :)
     BF_Block_SetDirty(curBlock);
+    print_block(data);
     printf("Block has space out\n");
   }
   else if(is_root(block_no, fileDesc)){
@@ -123,8 +124,10 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     char * new_data = BF_Block_GetData(newBlock);
     initialize_block(new_data, new_id, 0);
     //keys in 1st is ceil(key2+1/2)
+    printf("KEYS ARE %d\n", keys);
     int keys_in1st = (keys+1)%2 ? (keys+1)/2 +1 : (keys+1)/2;
     int keys_in2nd = keys - keys_in1st;
+    printf("KEYS in 2nd are %d\n", keys_in2nd);
     //obviously in root there will be 1 key
     char * mid_key = malloc(keysize);
     //get key to up here
@@ -154,6 +157,12 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     printf("prev root %d\n", openFiles[fileDesc]->root_id);
     openFiles[fileDesc]->root_id = root_id;
     //update the root_id in openFiles
+    printf("PRINTING LBLOCK\n");
+    print_block(data);
+    printf("PRINTING ROOT\n");
+    print_block(root_data);
+    printf("PRINTING RBLOCK\n");
+    print_block(new_data);
     //don't forget the metadata
 
     //cleanup
@@ -213,7 +222,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     free(mid_key);
     printf("Split and pass out\n");
   }
-  print_block(data);
+
   //close/unpnin block ;)
   BF_UnpinBlock(curBlock);
   BF_Block_Destroy(&curBlock);
@@ -234,6 +243,7 @@ int block_has_space(char * data, int keysize, int keys){
   return avail_space < 0 ? 0 : 1;
 }
 
+//find offset works fine!!!
 //find_offset takes a key and finds the byte position where it should be put
 int find_offset(char* data, int keysize, void *key, int keytype, int keys){
  /*AM 1400192 STRONGLY OPPOSES the use of "bool"*/
@@ -317,12 +327,12 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
   roffset += sizeof(int);
   //then copy the first block pointer
   memmove(rdata+roffset, ldata+loffset, sizeof(int));
-  offset += sizeof(int);
+  loffset += sizeof(int);
   roffset += sizeof(int);
   //copy all the key/pointer pairs
   for(int i=0; i<keys_in2nd; i++){
     //copy the key
-    if(keysComparer(key, ldata+loffset, LESS_THAN, keytype)){
+    if(keysComparer(key, ldata+loffset, LESS_THAN, keytype) || loffset >=total_size){
       memmove(rdata+roffset, key, keysize);
       roffset += keysize;
       memmove(rdata+roffset, &newbid, sizeof(int));
