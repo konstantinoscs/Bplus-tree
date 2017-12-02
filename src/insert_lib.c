@@ -61,6 +61,11 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
   int keytype, int keysize, int keys_in1st, int keys_in2nd, int offset,
   int newbid, int total_size);
 
+  bool leaf_block_has_space(int num_of_records, int len1, int len2);
+
+//takes a records Attribute1 and finds the byte position where it should be
+int findOffsetInLeaf(char* data, void *value, int fd);
+
 //inserts an indexing value (only for index blocks, never leaf)
 int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
   static int i =0;
@@ -237,8 +242,7 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
   static int i =0;
   printf("inserted %d keys\n", ++i);
   printf("Entered index\n");
-  printf("key to insert %d\n", *(int *)value);
-  //printf("Newbid %d\n", newbid);
+  //printf("key to insert %d\n", *(int *)value);
   BF_Block *curBlock;
   BF_Block_Init(&curBlock);
   //get the number of the bf file we're in
@@ -251,6 +255,8 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
   char * data = BF_Block_GetData(curBlock);
   bool isLeaf;
   memmove(&isLeaf, data, sizeof(bool));
+
+
   //if is index block make the recursive call
   if(!isLeaf){
     int block_id;
@@ -260,28 +266,34 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     BF_UnpinBlock(curBlock);
     BF_Block_Destroy(&curBlock);
     stack_push(stack, block_id);
-    return insert_leaf_val(value1, size1, value2, size2, stack);
+    return insert_leaf_val(value1, value2, fileDesc, stack);
   }
+
+
   int offset = sizeof(bool);
   int records = 0;
   memmove(&records, data+offset, sizeof(int));
+  offset += 3*sizeof(int);
+  int size1 = openFiles[fileDesc]->length1;
+  int size2 = openFiles[fileDesc]->length2;
+  int total_size = offset + records*(size1+size2);
+
   if(leaf_block_has_space(records, size1, size2)){
     offset = findOffsetInLeaf(data, value1, fileDesc);
     printf("Offset is %d\n", offset);
     //move existing data to the right and insert new data
-    //bytes = cur_record + static -offset
     memmove(data+offset+size1+size2, data+offset, total_size-offset);
-    memmove(data+offset, value, size1);
+    memmove(data+offset, value1, size1);
     offset += size1;
-    //here I should have which block is beneath
-    memmove(data+offset, value2, size2;
+    memmove(data+offset, value2, size2);
+    
     //now set offset in the correct position to update the number of records
     offset = sizeof(bool) + 2*sizeof(int);
     records++;
     memmove(data+offset, &records, sizeof(int));
   }
   else{
-    offset_inl = 0;
+    int offset_inl = 0;
     //split block and insert index val
   }
 
