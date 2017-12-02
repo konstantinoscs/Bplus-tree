@@ -249,7 +249,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
 int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
   static int i =0;
   printf("inserted %d keys\n", ++i);
-  printf("Entered index\n");
+  printf("Entered leaf val\n");
   //printf("key to insert %d\n", *(int *)value);
   BF_Block *curBlock;
   BF_Block_Init(&curBlock);
