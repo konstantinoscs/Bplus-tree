@@ -124,8 +124,10 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     char * new_data = BF_Block_GetData(newBlock);
     initialize_block(new_data, new_id, 0);
     //keys in 1st is ceil(key2+1/2)
+    printf("KEYS ARE %d\n", keys);
     int keys_in1st = (keys+1)%2 ? (keys+1)/2 +1 : (keys+1)/2;
     int keys_in2nd = keys - keys_in1st;
+    printf("KEYS in 2nd are %d\n", keys_in2nd);
     //obviously in root there will be 1 key
     char * mid_key = malloc(keysize);
     //get key to up here
@@ -330,7 +332,7 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
   //copy all the key/pointer pairs
   for(int i=0; i<keys_in2nd; i++){
     //copy the key
-    if(keysComparer(key, ldata+loffset, LESS_THAN, keytype)){
+    if(keysComparer(key, ldata+loffset, LESS_THAN, keytype) || loffset >=total_size){
       memmove(rdata+roffset, key, keysize);
       roffset += keysize;
       memmove(rdata+roffset, &newbid, sizeof(int));
