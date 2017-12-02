@@ -371,3 +371,26 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
   return 1;
   //done
 }
+
+bool leaf_block_has_space(int num_of_records, int len1, int len2){
+  int used_space = sizeof(bool)+3*sizeof(int)+num_of_records*(len1+len2);
+  int free_space = BF_BLOCK_SIZE - used_space;
+  return free_space > 0 ? true : false;
+}
+
+//takes a records Attribute1 and finds the byte position where it should be
+int findOffsetInLeaf(char* data, void *value, int fd){
+  file_info* file = openFiles[fd];
+  int num_of_records;
+  memcpy(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int));
+  //start from the record 0 of this block
+  int offset = sizeof(bool)+3*sizeof(int);
+  int curr_record = 0;
+  //while value is GREATER_THAN the current record (find the first record that is GREATER_THAN_OR_EQUAL to value)
+  while(keysComparer(value, data+offset, GREATER_THAN, file->type1) && curr_record<num_of_records){
+    //skip current record because its smaller than value
+    curr_record++;
+    offset += file->length1+file->length2;
+  }
+  return offset;
+}

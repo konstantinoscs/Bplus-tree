@@ -244,33 +244,23 @@ int findMostLeftLeaf(int fd){
 
 //findRecord finds the position [0-n) of the record that has attr1 as value1 if it exists, otherwise the position it would be
 int findRecordPos(void * data, int fd, void * value1){
-  int offset = 0;
-  int record = 0;
   int records_no;
   int len1 = openFiles[fd]->length1;
   int len2 = openFiles[fd]->length2;
   int type = openFiles[fd]->type1;
 
-  //add the first static data to offset
-  offset += sizeof(bool) + 2*sizeof(int);
   //get the number of records
-  memmove(&records_no, data+offset, sizeof(int));
-  //add to the offset 4 bytes for keys_no
-  offset += sizeof(int);
-
-  //iterate for each record
-  while(record < records_no){
-    //if the key we just got to is greater or equal to the key we are looking for
-    //return this position - its either the position it is or it should be
-    if (keysComparer(data+offset, value1, GREATER_THAN_OR_EQUAL, type))
-    {
-      return record;
-    }
-    record++;
-    offset += len1 + len2;
+  memmove(&records_no, data+sizeof(bool)+2*sizeof(int), sizeof(int));
+  //add the leaf metadata to offset
+  int offset = sizeof(bool) + 3*sizeof(int);
+  int curr_record = 0;
+  //while value1 is GREATER_THAN the current record (find the first record that is GREATER_THAN_OR_EQUAL to value1)
+  while(keysComparer(value1, data+offset, GREATER_THAN, type) && curr_record < records_no){
+    curr_record++;
+    offset += len1+len2;
   }
   //if the correct position was not found then it is the next one
-  return record;
+  return curr_record;
 }
 
 //RecordIndex->the index the new record should go [0-n), fd our openFiles descriptor, currRecords the amount of existing records in this block
