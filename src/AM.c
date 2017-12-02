@@ -261,11 +261,23 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
     BF_Block_SetDirty(tmpBlock);
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   }
+  //get root block
+  BF_GetBlock(openFiles[fileDesc]->bf_desc, 0, tmpBlock);
+  char* data = BF_Block_GetData(tmpBlock);
+  int rootId;
+  memmove(&rootId,data+15*sizeof(char)+4*sizeof(int),sizeof(int));
+  BF_UnpinBlock(tmpBlock);
+  BF_Block_Destroy(&tmpBlock);
+  //initialize a stack to keep track of the path whiel traversing the tree
   Stack *nodesPath;
   create_stack(&nodesPath);
-  int rootId = memmove()
   stack_push(nodesPath,rootId);
+  //insert the new record in a leaf block
   insert_leaf_val(value1,value2,fileDesc,nodesPath);
+  //clean up
+  destroy_stack(nodesPath);
+
+  return AME_OK;
 }
 
 /*TOUTHANASI
