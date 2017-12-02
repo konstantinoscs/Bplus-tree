@@ -263,10 +263,10 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
   char * data = BF_Block_GetData(curBlock);
   bool isLeaf;
   memmove(&isLeaf, data, sizeof(bool));
-  int offset = sizeof(bool);
+  int offset = sizeof(bool)+2*sizeof(int);
   int records = 0;
   memmove(&records, data+offset, sizeof(int));
-  offset += 3*sizeof(int);
+  offset += sizeof(int);
   int size1 = openFiles[fileDesc]->length1;
   int type1 = openFiles[fileDesc]->type1;
 
