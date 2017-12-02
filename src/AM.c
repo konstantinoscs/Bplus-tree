@@ -223,7 +223,50 @@ int AM_CloseIndex (int fileDesc) {
   return AME_OK;
 }
 
+int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
+  BF_Block *tmpBlock;
+  BF_Block_Init(&tmpBlock);
+  void * rootData = NULL;
+  int offset = 0;
+  int type1, len1, type2, len2;
+  type1 = len1 = type2 = len2 = 0;
+
+  //Getting the attr1 and attr2 type and length
+  type1 = openFiles[fileDesc]->type1;
+  len1 = openFiles[fileDesc]->length1;
+  type2 = openFiles[fileDesc]->type2;
+  len2 = openFiles[fileDesc]->length2;
+
+  if (!openFiles[fileDesc]->rootInitialized)  //If its the first entry that we insert we have to put it as a key to the root
+  {
+    CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, openFiles[fileDesc]->root_id, tmpBlock));//Getting the root
+    rootData = BF_Block_GetData(tmpBlock);//and its data
+    offset = sizeof(char) + sizeof(int)*2;
+    int currKeys = 1;
+    memcpy(rootData + offset, &currKeys, sizeof(int));  //Increasing the number of current keys to root to one
+    offset += sizeof(int)*2;
+    memcpy(rootData + offset, value1, len1);  //Writing the first value of the new record as a key to the root
+    openFiles[fileDesc]->rootInitialized = 1; //The root now is initialized
+    BF_Block_SetDirty(tmpBlock);
+    CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+
+    CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, 0, tmpBlock));//Getting the metadata block
+    rootData = BF_Block_GetData(tmpBlock);//and its data
+
+    offset = sizeof(char)*15 + sizeof(int)*5;
+    int rootInitialized = 1;
+    memcpy(rootData + offset, &rootInitialized, sizeof(int));
+
+    BF_Block_SetDirty(tmpBlock);
+    CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+  }
+  else{}  //if root is initialized
+    //create stack and push root to it
+    //call insert_leaf_val(value1,value2,fileDesc,nodesPath)
+}
+
+/*TOUTHANASI
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
   void *data1 = NULL;
@@ -370,7 +413,7 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
 
       }
 
-    }*/
+    }
 
 
     BF_Block_SetDirty(tmpBlock1);
@@ -410,7 +453,7 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
   BF_Block_Destroy(&tmpBlock2);
 
   return AME_OK;
-}
+}*/
 
 
 int AM_OpenIndexScan(int fileDesc, int op, void *value) {
