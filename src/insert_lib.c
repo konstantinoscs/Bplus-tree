@@ -33,7 +33,7 @@ void print_block(char * data){
   memmove(&temp, data +offset, sizeof(int));
   printf("p%d ", temp);
   offset+= sizeof(int);
-  for(int i=0; i< recordsNum; i++){
+  for(int i=0; i<recordsNum; i++){
     //printf("k%d ", *((int *)data+offset));
     memmove(&temp, data +offset, sizeof(int));
     printf("k%d ", temp);
@@ -109,6 +109,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     memmove(data+offset, &keys, sizeof(int));
     //done :)
     BF_Block_SetDirty(curBlock);
+    print_block(data);
     printf("Block has space out\n");
   }
   else if(is_root(block_no, fileDesc)){
@@ -154,6 +155,12 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     printf("prev root %d\n", openFiles[fileDesc]->root_id);
     openFiles[fileDesc]->root_id = root_id;
     //update the root_id in openFiles
+    printf("PRINTING LBLOCK\n");
+    print_block(data);
+    printf("PRINTING ROOT\n");
+    print_block(root_data);
+    printf("PRINTING RBLOCK\n");
+    print_block(new_data);
     //don't forget the metadata
 
     //cleanup
@@ -213,7 +220,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     free(mid_key);
     printf("Split and pass out\n");
   }
-  print_block(data);
+
   //close/unpnin block ;)
   BF_UnpinBlock(curBlock);
   BF_Block_Destroy(&curBlock);
@@ -318,7 +325,7 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
   roffset += sizeof(int);
   //then copy the first block pointer
   memmove(rdata+roffset, ldata+loffset, sizeof(int));
-  offset += sizeof(int);
+  loffset += sizeof(int);
   roffset += sizeof(int);
   //copy all the key/pointer pairs
   for(int i=0; i<keys_in2nd; i++){
