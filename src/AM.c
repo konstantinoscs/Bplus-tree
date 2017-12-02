@@ -370,7 +370,7 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
         memcpy(data2 + offset2, currRecords2, sizeof(int));
       }else
       {
-        
+
       }
 
     }*/

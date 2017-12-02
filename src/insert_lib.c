@@ -232,6 +232,64 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
   return 1;
 }
 
+//recursively adds a leaf val
+int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
+  static int i =0;
+  printf("inserted %d keys\n", ++i);
+  printf("Entered index\n");
+  printf("key to insert %d\n", *(int *)value);
+  //printf("Newbid %d\n", newbid);
+  BF_Block *curBlock;
+  BF_Block_Init(&curBlock);
+  //get the number of the bf file we're in
+  int bf_no = openFiles[fileDesc]->bf_desc;
+  //get current block number from stack
+  int block_no = get_top(stack);
+  printf("BLock_no %d\n", block_no);
+  //open block and get its data
+  BF_GetBlock(bf_no, block_no, curBlock);
+  char * data = BF_Block_GetData(curBlock);
+  bool isLeaf;
+  memmove(&isLeaf, data, sizeof(bool));
+  //if is index block make the recursive call
+  if(!isLeaf){
+    int block_id;
+    //get this block id and push it to stack
+    memmove(&block_id, data+sizeof(bool), sizeof(int));
+    //unpin and destroy block here to save stack memory
+    BF_UnpinBlock(curBlock);
+    BF_Block_Destroy(&curBlock);
+    stack_push(stack, block_id);
+    return insert_leaf_val(value1, size1, value2, size2, stack);
+  }
+  int offset = sizeof(bool);
+  int records = 0;
+  memmove(&records, data+offset, sizeof(int));
+  if(leaf_block_has_space(records, size1, size2)){
+    offset = findOffsetInLeaf(data, value1, fileDesc);
+    printf("Offset is %d\n", offset);
+    //move existing data to the right and insert new data
+    //bytes = cur_record + static -offset
+    memmove(data+offset+size1+size2, data+offset, total_size-offset);
+    memmove(data+offset, value, size1);
+    offset += size1;
+    //here I should have which block is beneath
+    memmove(data+offset, value2, size2;
+    //now set offset in the correct position to update the number of records
+    offset = sizeof(bool) + 2*sizeof(int);
+    records++;
+    memmove(data+offset, &records, sizeof(int));
+  }
+  else{
+    offset_inl = 0;
+    //split block and insert index val
+  }
+
+  BF_UnpinBlock(curBlock);
+  BF_Block_Destroy(&curBlock);
+
+}
+
 //pretty straight forward
 int block_has_space(char * data, int keysize, int keys){
   int avail_space = 0;
