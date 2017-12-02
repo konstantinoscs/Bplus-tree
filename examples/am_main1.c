@@ -1071,7 +1071,7 @@ int main() {
 	 *  Έυρεση της εγγραφής "KOKKINOS ARISTOTELHS", γνωρίζοντας ότι το όνομα είναι  *
 	 *	μοναδικό                                                                    *
 	 ********************************************************************************/
-
+	getchar();
 	strcpy(ename, "KOKKINOS ARISTOTELHS");
 	printf("\nRESULT OF QUERY #1\n\n");
 

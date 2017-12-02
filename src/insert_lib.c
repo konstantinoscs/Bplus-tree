@@ -301,6 +301,8 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
 
   int size2 = openFiles[fileDesc]->length2;
   int total_size = offset + records*(size1+size2);
+  printf("Records are %d\nTotalsize is %d\n", records, total_size);
+  printf("Size1,2 %d %d\n", size1, size2);
 
   if(leaf_block_has_space(records, size1, size2)){
     offset = findOffsetInLeaf(data, value1, fileDesc);
