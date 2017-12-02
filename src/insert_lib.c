@@ -62,10 +62,16 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
   int keytype, int keysize, int keys_in1st, int keys_in2nd, int offset,
   int newbid, int total_size);
 
-  bool leaf_block_has_space(int num_of_records, int len1, int len2);
+bool leaf_block_has_space(int num_of_records, int len1, int len2);
 
 //takes a records Attribute1 and finds the byte position where it should be
 int findOffsetInLeaf(char* data, void *value, int fd);
+
+int find_middle_record(char * data, char * mid_value1, void * value1, int type1,
+  int size1, int size2, int recs_in1st);
+
+int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
+  int size1, int size2, int total_records, void* value1, void* value2);
 
 //inserts an indexing value (only for index blocks, never leaf)
 int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
@@ -262,6 +268,7 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
   memmove(&records, data+offset, sizeof(int));
   offset += 3*sizeof(int);
   int size1 = openFiles[fileDesc]->length1;
+  int type1 = openFiles[fileDesc]->type1;
 
   //if is index block make the recursive call
   if(!isLeaf){
@@ -269,13 +276,12 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     int block_id;
     //get this block id and push it to stack
     memmove(&block_id, data+sizeof(bool), sizeof(int));
-    (if block_id != block_no){
-      fprintf(err, "Wrong number in block id\n");
+    if (block_id != block_no){
+      fprintf(stderr, "Wrong number in block id\n");
       exit(0);
     }
     //search current block to find the next block in down level
     //get data type for comparisons
-    int type1 = openFiles[fileDesc]->type1;
     //pass the first block pointer
     offset+=sizeof(int);
     for(int i=0; i<records; i++){
@@ -285,7 +291,7 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
       offset += size1 + sizeof(int);
     }
     offset -= sizeof(int);
-    memmove(block_id, data+offset, sizeof(int));
+    memmove(&block_id, data+offset, sizeof(int));
     //unpin and destroy block here to save stack memory
     BF_UnpinBlock(curBlock);
     BF_Block_Destroy(&curBlock);
@@ -327,16 +333,22 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
 
     int recs_in2nd = (records+1)%2 ? records/2 +1 : (records+1)/2;
     int recs_in1st = records +1 - recs_in2nd;
-    //int offset_inl = find_middle();
+    char * mid_value = malloc(size1);
+    find_middle_record(data, mid_value, value1, type1, size1, size2, recs_in1st);
 
     //partition with caution for same values
+    leaf_partition(data, new_data, mid_value, type1, size1, size2, records+1,
+      value1, value2);
 
     //set new records;
     //cleanup
     BF_Block_SetDirty(newBlock);
     BF_UnpinBlock(newBlock);
     BF_Block_Destroy(&newBlock);
+    stack_pop(stack);
+    insert_index_val(mid_value, fileDesc, stack, new_id);
 
+    free(mid_value);
   }
   BF_Block_SetDirty(curBlock);
   BF_UnpinBlock(curBlock);
@@ -509,7 +521,7 @@ int findOffsetInLeaf(char* data, void *value, int fd){
 }
 
 int find_middle_record(char * data, char * mid_value1, void * value1, int type1,
-  int size1,int size2, int recs_in1st){
+  int size1, int size2, int recs_in1st){
 
     int offset = sizeof(bool) + 3*sizeof(int);
     int past_val1 = 0;
@@ -593,8 +605,8 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
       if(keysComparer(value1,ldata+loffset,LESS_THAN,type1)){ //this is where value1 will go
         //move the data from here to the right to make space for value1
         int newspace = size1+size2;
-        int record_left_in1st = recs_in1st-1-i;
-        memmove(ldata+loffset+newspace, ldata+loffset, record_left_in1st*(size1+size2));
+        int recs_left_in1st = recs_in1st-1-i;
+        memmove(ldata+loffset+newspace, ldata+loffset, recs_left_in1st*(size1+size2));
         //insert value1 and value2
         memmove(ldata+loffset,value1,size1);
         loffset += size1;
@@ -608,8 +620,8 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
   }
   //now the 1st block is in the goal state and the value1 is inserted
   //update recordsNum in old and new block
-  memmove(ldata+sizeof(bool)+2*sizeof(int),&records_in1st,sizeof(int));
-  memmove(rdata+sizeof(bool)+2*sizeof(int),&records_in2nd,sizeof(int));
+  memmove(ldata+sizeof(bool)+2*sizeof(int), &recs_in1st, sizeof(int));
+  memmove(rdata+sizeof(bool)+2*sizeof(int), &recs_in2nd, sizeof(int));
   return 1;
 }
 
