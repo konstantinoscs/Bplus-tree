@@ -257,13 +257,35 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
   char * data = BF_Block_GetData(curBlock);
   bool isLeaf;
   memmove(&isLeaf, data, sizeof(bool));
-
+  int offset = sizeof(bool);
+  int records = 0;
+  memmove(&records, data+offset, sizeof(int));
+  offset += 3*sizeof(int);
+  int size1 = openFiles[fileDesc]->length1;
 
   //if is index block make the recursive call
   if(!isLeaf){
+    //find the appropriate block id
     int block_id;
     //get this block id and push it to stack
     memmove(&block_id, data+sizeof(bool), sizeof(int));
+    (if block_id != block_no){
+      fprintf(err, "Wrong number in block id\n");
+      exit(0);
+    }
+    //search current block to find the next block in down level
+    //get data type for comparisons
+    int type1 = openFiles[fileDesc]->type1;
+    //pass the first block pointer
+    offset+=sizeof(int);
+    for(int i=0; i<records; i++){
+      if(keysComparer(value1, data+offset, LESS_THAN, type1)){
+        break;
+      }
+      offset += size1 + sizeof(int);
+    }
+    offset -= sizeof(int);
+    memmove(block_id, data+offset, sizeof(int));
     //unpin and destroy block here to save stack memory
     BF_UnpinBlock(curBlock);
     BF_Block_Destroy(&curBlock);
@@ -271,12 +293,6 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     return insert_leaf_val(value1, value2, fileDesc, stack);
   }
 
-
-  int offset = sizeof(bool);
-  int records = 0;
-  memmove(&records, data+offset, sizeof(int));
-  offset += 3*sizeof(int);
-  int size1 = openFiles[fileDesc]->length1;
   int size2 = openFiles[fileDesc]->length2;
   int total_size = offset + records*(size1+size2);
 
@@ -592,8 +608,8 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
   }
   //now the 1st block is in the goal state and the value1 is inserted
   //update recordsNum in old and new block
-  memmove(ldata+sizeof(bool)+2*sizeof(int),&record_in1st,sizeof(int));
-  memmove(rdata+sizeof(bool)+2*sizeof(int),&record_in2nd,sizeof(int));
+  memmove(ldata+sizeof(bool)+2*sizeof(int),&records_in1st,sizeof(int));
+  memmove(rdata+sizeof(bool)+2*sizeof(int),&records_in2nd,sizeof(int));
   return 1;
 }
 
