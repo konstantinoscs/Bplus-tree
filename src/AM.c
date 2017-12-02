@@ -224,7 +224,7 @@ int AM_CloseIndex (int fileDesc) {
 }
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
-
+printf("-----------INSERTING-----------\n");
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
   void * rootData = NULL;
@@ -278,7 +278,6 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   //clean up
   printf("meta insert leaf\n");
   //destroy_stack(nodesPath);
-  printf("exiting insert");
   return AME_OK;
 }
 
