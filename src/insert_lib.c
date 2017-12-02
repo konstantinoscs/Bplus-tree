@@ -61,7 +61,7 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
   int keytype, int keysize, int keys_in1st, int keys_in2nd, int offset,
   int newbid, int total_size);
 
-//inserts an indexing value
+//inserts an indexing value (only for index blocks, never leaf)
 int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
   static int i =0;
   printf("inserted %d keys\n", ++i);

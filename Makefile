@@ -27,4 +27,4 @@ bf_main3:
 	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/bf_main3.c -lbf -o ./build/bf_main3 -O2
 
 clean:
-	rm -rf EMP-AGE EMP-DNAME EMP-FAULT EMP-NAME EMP-SAL am_main*
+	rm -rf EMP-AGE EMP-DNAME EMP-FAULT EMP-NAME EMP-SAL am_main* TestBase test
