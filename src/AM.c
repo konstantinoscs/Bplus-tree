@@ -244,7 +244,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   len2 = openFiles[fileDesc]->length2;
 
   targetBlockId = findLeaf(fileDesc, value1, nodesPath); //Find the leaf that this value is supposed to be inserted and the path getting there
-printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 );
+//printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 );
 
   BF_Block *tmpBlock, *tmpBlock1, *tmpBlock2;
   BF_Block_Init(&tmpBlock);
