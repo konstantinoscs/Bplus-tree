@@ -9,9 +9,46 @@
 
 extern file_info * openFiles[20];
 
+void print_block(char * data){
+  int ptrs = 0;
+  int offset = 0;
+  bool isleaf =0;
+  int block_id = 0;
+  int nextPtr=0;
+  int recordsNum;
+  int temp;
+  memmove(&isleaf, data, sizeof(bool));
+  offset+= sizeof(bool);
+  memmove(&block_id, data+offset, sizeof(int));
+  offset+= sizeof(int);
+  memmove(&nextPtr, data+offset, sizeof(int));
+  offset += sizeof(int);
+  memmove(&recordsNum, data+offset, sizeof(int));
+  offset += sizeof(int);
+  printf("Printing block with id %d\n", block_id);
+  printf("Is leaf: %d\n", isleaf);
+  printf("Nexptr %d\n", nextPtr);
+  printf("recordsNum %d\n", recordsNum);
+  // printf("p%d ", *((int *)data+offset));
+  memmove(&temp, data +offset, sizeof(int));
+  printf("p%d ", temp);
+  offset+= sizeof(int);
+  for(int i=0; i< recordsNum; i++){
+    //printf("k%d ", *((int *)data+offset));
+    memmove(&temp, data +offset, sizeof(int));
+    printf("p%d ", temp);
+    offset += sizeof(int);
+    //printf("p%d ", *((int *)data+offset));
+    memmove(&temp, data +offset, sizeof(int));
+    printf("p%d ", temp);
+    offset += sizeof(int);
+  }
+  printf("\n");
+}
+
 //the declarations I will need, definitions are a the end of this file
 int block_has_space(char * data, int keysize, int keys);
-int find_offset(char* data, int keysize, void *key, int keytype);
+int find_offset(char* data, int keysize, void *key, int keytype, int keys);
 //checks if we are in the root
 int is_root(int block_no, int fileDesc);
 //the standard initialization for an inside node
@@ -26,16 +63,22 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
 
 //inserts an indexing value (only for index blocks, never leaf)
 int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
+  static int i =0;
+  printf("inserted %d keys\n", ++i);
   printf("Entered index\n");
+  printf("key to insert %d\n", *(int *)value);
+  printf("Newbid %d\n", newbid);
   BF_Block *curBlock;
   BF_Block_Init(&curBlock);
   //get the number of the bf file we're in
   int bf_no = openFiles[fileDesc]->bf_desc;
   //get current block number from stack
   int block_no = get_top(stack);
+  printf("BLock_no %d\n", block_no);
   //open block and get its data
   BF_GetBlock(bf_no, block_no, curBlock);
   char * data = BF_Block_GetData(curBlock);
+  print_block(data);
   //get the number of keys because we may have to update the number later
   int offset = sizeof(bool) + 2*sizeof(int);
   int keys = 0;
@@ -51,7 +94,8 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
   if(block_has_space(data, keysize, keys)){
     printf("Block has space \n");
     //insert in current block
-    offset = find_offset(data, keysize, value, keytype);
+    offset = find_offset(data, keysize, value, keytype, keys);
+    printf("Offset is %d\n", offset);
     //move existing data to the right and insert new data
     //bytes = cur_record + static -offset
     memmove(data+offset+keysize+sizeof(int), data+offset, total_size-offset);
@@ -96,6 +140,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     BF_AllocateBlock(bf_no, newroot);
     int root_id = 0;
     BF_GetBlockCounter(bf_no, &root_id);
+    printf("Got root_id %d\n", root_id);
     root_id--;
     char * root_data = BF_Block_GetData(newroot);
     initialize_block(root_data, root_id, 1);
@@ -106,6 +151,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     offset += keysize;
     memmove(root_data+offset, &new_id, sizeof(int));
     //update the root id in file_info
+    printf("prev root %d\n", openFiles[fileDesc]->root_id);
     openFiles[fileDesc]->root_id = root_id;
     //update the root_id in openFiles
     //don't forget the metadata
@@ -167,7 +213,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     free(mid_key);
     printf("Split and pass out\n");
   }
-
+  print_block(data);
   //close/unpnin block ;)
   BF_UnpinBlock(curBlock);
   BF_Block_Destroy(&curBlock);
@@ -189,7 +235,7 @@ int block_has_space(char * data, int keysize, int keys){
 }
 
 //find_offset takes a key and finds the byte position where it should be put
-int find_offset(char* data, int keysize, void *key, int keytype){
+int find_offset(char* data, int keysize, void *key, int keytype, int keys){
  /*AM 1400192 STRONGLY OPPOSES the use of "bool"*/
 
  int offset = 0;
@@ -201,14 +247,12 @@ int find_offset(char* data, int keysize, void *key, int keytype){
  memmove(&keys_no, data+offset, sizeof(int));
  //add to the offset 4 bytes for keys_no and 4 for the first block pointer
  offset += 2*sizeof(int);
-
- //ATTENTION: this while should always finish since it's called always
- //when there is space in the block
- while(!keysComparer(key, data+offset, GREATER_THAN, keytype)){
-
-   keys_no++;
-   //move past one key plus the block pointer
-   offset += keysize + sizeof(int);
+ if(keys!=keys_no)
+  printf("Wrong keys wtf\n");
+ for(int i=0; i<keys; i++){
+   if(keysComparer(key, data+offset, LESS_THAN, keytype))
+    break;
+  offset += keysize + sizeof(int);
  }
  //if the correct position was not found then it is the next one
  return offset;

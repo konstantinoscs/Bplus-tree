@@ -25,4 +25,6 @@ int get_top(Stack* stack);
 //takes a stack pointer and destroys the corresponding stack
 int destroy_stack(Stack * stack);
 
+void print_stack(Stack * stack);
+
 #endif

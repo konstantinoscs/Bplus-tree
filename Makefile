@@ -1,6 +1,6 @@
 am_main1:
 	@echo " Compile am_main1 ...";
-	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/am_main1.c ./src/AM.c ./src/file_info.c ./src/Scan.c ./src/stack.c ./src/insert_lib.c ./src/HelperFunctions.c -lbf -o am_main1 -g
+	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/am_main1.c ./src/AM.c ./src/file_info.c ./src/Scan.c ./src/stack.c ./src/insert_lib.c ./src/HelperFunctions.c -lbf -o am_main1 -g -O0
 
 am_main2:
 	@echo " Compile am_main2 ...";

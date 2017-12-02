@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "stdlib.h"
 #include "stack.h"
 
@@ -36,4 +37,9 @@ int get_top(Stack* stack){
 int destroy_stack(Stack * stack){
   free(stack->keys);
   free(stack);
+}
+
+void print_stack(Stack * stack){
+  for(int i=0; i<stack->elems; i++)
+    printf("Stack[%d] = %d\n", i,stack->keys[i]);
 }
