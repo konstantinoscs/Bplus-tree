@@ -33,7 +33,7 @@ typedef struct BlockMetadata
 
 /*typedef struct firstBlock
 {
-  DIBLU$  sizeof(char)*15
+  DIBLU$
   int type1; //Type of the first(key) attribute. 1 for int 2 for float 3 for string
   int len1; //Length of the first attribute
   int type2; //Type of the second attribute. 1 for int 2 for float 3 for string

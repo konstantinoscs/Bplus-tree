@@ -272,11 +272,13 @@ printf("-----------INSERTING-----------\n");
   Stack *nodesPath;
   create_stack(&nodesPath);
   stack_push(nodesPath,rootId);
+  printf("prin insert leaf\n");
   //insert the new record in a leaf block
   insert_leaf_val(value1,value2,fileDesc,nodesPath);
   //clean up
-  destroy_stack(nodesPath);
-
+  printf("meta insert leaf\n");
+  //destroy_stack(nodesPath);
+  printf("exiting insert");
   return AME_OK;
 }
 
