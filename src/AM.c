@@ -315,28 +315,31 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
     if (recordIndex < numRecToOld)
       goesToNew = 0;  //go to old
 
-    int offset2 = sizeof(char)+3*sizeof(int);
     offset = sizeof(char) + 3*sizeof(int);
-    //Move to the start of the new block the data that is pointed by data1 (old block) increased by the number of records that
-    //should stay in the old block. The segment that is to be moved will have the size of the records that should be moved on the new block
-    memcpy(data2 + offset2, data1 + offset + numRecToOld*(len1 + len2), numRecToNew*(len1 + len2));
-
-    offset = sizeof(char) + sizeof(int)*2;
-    //Updating the block counters of the old and the new block
-    memcpy(data1 + offset, &numRecToOld, sizeof(int));
-    memcpy(data2 + offset, &numRecToNew, sizeof(int));
-
-    if (!goesToNew)  //If the new record goes to the old block
-    {
+    //will the new record go to the old or the new block?
+    if (!goesToNew){  //If the new record goes to the old block
+      memcpy(data2 + offset, data1+offset+(numRecToOld-1)*(len1+len2),numRecToNew*(len1+len2));
+      //Updating the block counters of the old and the new block
+      offset = sizeof(char) + sizeof(int)*2;
+      memcpy(data1 + offset, &numRecToOld, sizeof(int));
+      memcpy(data2 + offset, &numRecToNew, sizeof(int));
+      //inserting the new record in the old block
       recordIndex = findRecordPos(data1, fileDesc, value1);  //Get the position it should go again in case something changed
-      simpleInsertToLeaf(recordIndex, fileDesc, data1, numRecToOld, value1, value2); //Make a simple insertion to the old block
-    }else{//If the new record is to go to the new block
+      simpleInsertToLeaf(recordIndex, fileDesc, data1, numRecToOld-1, value1, value2); //Make a simple insertion to the old block
+    }
+    else{           //If the new record goes to the new block
+      memcpy(data2 + offset, data1+offset+numRecToOld*(len1+len2),numRecToNew*(len1+len2));
+      //Updating the block counters of the old and the new block
+      offset = sizeof(char) + sizeof(int)*2;
+      memcpy(data1 + offset, &numRecToOld, sizeof(int));
+      memcpy(data2 + offset, &numRecToNew, sizeof(int));
+      //inserting the new record to the new block
       recordIndex = findRecordPos(data2, fileDesc, value1);  //Get the position it should go again in case something changed
-      simpleInsertToLeaf(recordIndex, fileDesc, data2, numRecToNew, value1, value2);  //Make a simple insertion to the old block
+      simpleInsertToLeaf(recordIndex, fileDesc, data2, numRecToNew-1, value1, value2);  //Make a simple insertion to the old block
     }
      //Take the first attribute of the new block as a key to its parent
     char *newKey = malloc(len1);
-    memcpy(newKey, data2+sizeof(char)+3*sizeof(int), len1);
+    memcpy(newKey, data2+sizeof(char)+3*sizeof(int), len1); //newKey will be the 1st key of the new(right) block
 
     /*int currRecords1, currRecords2;
     void *lastKey = NULL;

@@ -281,7 +281,8 @@ void simpleInsertToLeaf(int recordIndex, int fd, void* data, int currRecords, vo
   len2 = openFiles[fd]->length2;
 
   offset = (sizeof(char) + sizeof(int)*3 + recordIndex*(len1 + len2));  //Get the offset to that position
-  memmove(data + offset + len1 + len2, data + offset, (currRecords - recordIndex)*(len1 + len2)); //Move all the records after that position right by recordSize (len1 + len 2)
+  //Move all the records after that position right by recordSize (len1 + len 2)
+  memmove(data + offset + len1 + len2, data + offset, (currRecords - recordIndex)*(len1 + len2));
   memcpy(data + offset, value1, len1);  //Write to the space we made the new record
   offset += len1;
   memcpy(data + offset, value2, len2);
