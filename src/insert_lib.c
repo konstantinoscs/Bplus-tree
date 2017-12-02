@@ -591,8 +591,8 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
   }
   //now the 1st block is in the goal state and the value1 is inserted
   //update recordsNum in old and new block
-  memmove(ldata+sizeof(bool)+2*sizeof(int),&record_in1st,sizeof(int));
-  memmove(rdata+sizeof(bool)+2*sizeof(int),&record_in2nd,sizeof(int));
+  memmove(ldata+sizeof(bool)+2*sizeof(int),&records_in1st,sizeof(int));
+  memmove(rdata+sizeof(bool)+2*sizeof(int),&records_in2nd,sizeof(int));
   return 1;
 }
 
