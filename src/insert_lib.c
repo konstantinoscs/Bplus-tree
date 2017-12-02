@@ -6,6 +6,7 @@
 #include "stack.h"
 #include "BoolType.h"
 #include "AM.h"
+#include "HelperFunctions.h"
 
 extern file_info * openFiles[20];
 
@@ -277,7 +278,6 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
   offset += 3*sizeof(int);
   int size1 = openFiles[fileDesc]->length1;
   int size2 = openFiles[fileDesc]->length2;
-  int bf_no = openFiles[fileDesc]->bf_desc;
   int total_size = offset + records*(size1+size2);
 
   if(leaf_block_has_space(records, size1, size2)){
@@ -303,9 +303,9 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     BF_GetBlockCounter(bf_no, &new_id);
     new_id--;
     char * new_data = BF_Block_GetData(newBlock);
-    int nextPtr = 0;
     offset = sizeof(bool)+sizeof(int);
-    memmove(&nexPtr, data+offset, sizeof(int));
+    int nextPtr;
+    memmove(&nextPtr, data+offset, sizeof(int));
     //initialize leaf block
     blockMetadataInit(new_data, 1, new_id, nextPtr, 0);
 
@@ -493,7 +493,7 @@ int findOffsetInLeaf(char* data, void *value, int fd){
 }
 
 int find_middle_record(char * data, char * mid_value1, void * value1, int type1,
-  int size1, int recs_in1st){
+  int size1,int size2, int recs_in1st){
 
     int offset = sizeof(bool) + 3*sizeof(int);
     int past_val1 = 0;
@@ -501,7 +501,7 @@ int find_middle_record(char * data, char * mid_value1, void * value1, int type1,
       if(past_val1 || keysComparer(data+offset, value1, LESS_THAN, type1))
         offset += size1 + size2;
       else
-        past_key = 1;
+        past_val1 = 1;
     }
     //copy the correct middle key to the variable
     if(past_val1 || keysComparer(data+offset, value1, LESS_THAN_OR_EQUAL, type1)){
@@ -526,11 +526,72 @@ int find_middle_record(char * data, char * mid_value1, void * value1, int type1,
      return 1;
 }
 
-int leaf_partition(char * ldata, char * rdata, void *mid_value1, int type1,
-  int size1, int size2){
+int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
+  int size1, int size2, int total_records, void* value1, void* value2){ //total_records=maxRecords+1
 
   int recs_in1st =0;
+  int roffset=sizeof(bool)+3*sizeof(int);
+  int loffset=sizeof(bool)+3*sizeof(int);
 
+  //pass everything LESS_THAN mid_value
+  while(keysComparer(ldata+loffset,mid_value,LESS_THAN,type1)){
+    loffset += size1+size2;
+    recs_in1st++;
+  }
+  int recs_in2nd = total_records-recs_in1st;
+  //is the value1 going to the old or the new block?
+  bool inNewBlock = true;
+  if(keysComparer(value1,mid_value,LESS_THAN,type1)){ //if to the old
+    recs_in2nd--;
+    recs_in1st++;
+    inNewBlock = false;
+  }
+  else if(keysComparer(value1,mid_value,EQUAL,type1)){  //if to the new but the value1=mid_value
+    memmove(rdata+roffset,value1,size1+size2);  //insert mid_value as the 1st record of new block
+    roffset += size1+size2;
+  }
+
+  bool value1_is_set = false;
+  for(int i=0; i<recs_in2nd; i++){
+    //check if this is where the value1 will go
+    if(keysComparer(value1,mid_value,GREATER_THAN,type1) && keysComparer(value1,ldata+loffset,LESS_THAN,type1)){
+      memmove(rdata+roffset,value1,size1);
+      roffset += size1;
+      memmove(rdata+roffset,value2,size2);
+      roffset += size2;
+      value1_is_set = true;
+    }
+    else{ //else value1 is not here, but an old record is
+      memmove(rdata+roffset,ldata+loffset,size1);
+      loffset += size1;
+      roffset += size1;
+      memmove(rdata+roffset,ldata+loffset,size2);
+      loffset += size2;
+      roffset += size2;
+    }
+  }
+  //now the 2nd block is in the goal state
+  if(!value1_is_set){ //check if value1 goes to the old block
+    loffset = sizeof(bool)+3*sizeof(int);
+    for(int i=0; i<recs_in1st; i++){
+      if(keysComparer(value1,ldata+loffset,LESS_THAN,type1)){ //this is where value1 will go
+        //move the data from here to the right to make space for value1
+        int newspace = size1+size2;
+        int record_left_in1st = recs_in1st-1-i;
+        memmove(ldata+loffset+newspace, ldata+loffset, record_left_in1st*(size1+size2));
+        //insert value1 and value2
+        memmove(ldata+loffset,value1,size1);
+        loffset += size1;
+        memmove(ldata+loffset,value2,size2);
+        loffset += size2;
+      }
+      else{ //value1 isnt going here, lets look at the next record
+        loffset += size1+size2;
+      }
+    }
+  }
+  //now the 1st block is in the goal state and the value1 is inserted
+  return 1;
 }
 
 /*2

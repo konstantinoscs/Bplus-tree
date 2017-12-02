@@ -319,15 +319,16 @@ int typeChecker(char attrType, int attrLength, int *type, int *len){
 
 //Initializing a new blocks metadata
 void blockMetadataInit(void *data, bool isLeaf, int blockId, int nextPtr, int recordsNum){
+  //bool isLeaf
   memcpy(data, &isLeaf, sizeof(char));
-  data += sizeof(char);
-
+  //int blockId
+  data += sizeof(bool);
   memcpy(data, &blockId, sizeof(int)); //Writing the block's id to it
+  //int nextPtr
   data += sizeof(int);
-
   memcpy(data, &nextPtr, sizeof(int));
+  //int recordsNum
   data += sizeof(int);
-
   memcpy(data, &recordsNum, sizeof(int));
 }
 
