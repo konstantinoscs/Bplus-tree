@@ -11,10 +11,18 @@ void main(void){
   int fd = AM_OpenIndex("TestBase");
 
 
-  for(int i=0; i<1000; i++){
-    char str[5]= { '0'+i/1000, '0'+i/100 ,'0'+i/10, '0'+i%10,'\0'};
+  for(int i=0; i<10000; i++){
+    /*string
+    char str[5];
+    sprintf(str, "%d", i);
     printf("(((%s)))", str);
+
+    */
+
+
     AM_InsertEntry(fd,(void*) &i, (void*) &i);
   }
+
+
   AM_CloseIndex(fd);
 }
