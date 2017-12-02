@@ -225,6 +225,19 @@ int AM_CloseIndex (int fileDesc) {
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
 
+  BF_Block *tmpBlock;
+  BF_Block_Init(&tmpBlock);
+  void * rootData = NULL;
+  int offset = 0;
+  int type1, len1, type2, len2;
+  type1 = len1 = type2 = len2 = 0;
+
+  //Getting the attr1 and attr2 type and length
+  type1 = openFiles[fileDesc]->type1;
+  len1 = openFiles[fileDesc]->length1;
+  type2 = openFiles[fileDesc]->type2;
+  len2 = openFiles[fileDesc]->length2;
+
   if (!openFiles[fileDesc]->rootInitialized)  //If its the first entry that we insert we have to put it as a key to the root
   {
     CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, openFiles[fileDesc]->root_id, tmpBlock));//Getting the root
@@ -248,7 +261,7 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
     BF_Block_SetDirty(tmpBlock);
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   }
-  else  //if root is initialized
+  else{}  //if root is initialized
     //create stack and push root to it
     //call insert_leaf_val(value1,value2,fileDesc,nodesPath)
 }
