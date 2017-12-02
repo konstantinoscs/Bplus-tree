@@ -239,7 +239,6 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
   //Getting the attr1 and attr2 type and length
   type1 = openFiles[fileDesc]->type1;
   len1 = openFiles[fileDesc]->length1;
-
   type2 = openFiles[fileDesc]->type2;
   len2 = openFiles[fileDesc]->length2;
 
@@ -250,14 +249,12 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
   BF_Block_Init(&tmpBlock);
   BF_Block_Init(&tmpBlock1);
   BF_Block_Init(&tmpBlock2);
-  CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, targetBlockId, tmpBlock1));//Getting the block that we are supposed to insert the new record
-  data1 = BF_Block_GetData(tmpBlock1);//and its data
+  //Getting the block that we are supposed to insert the new record
+  CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, targetBlockId, tmpBlock1));
+  data1 = BF_Block_GetData(tmpBlock1);  //and its data
 
-  offset = (sizeof(char) + sizeof(int));
-
-  memcpy(&nextPtr, data1 + offset, sizeof(int));// Getting the nextPtr of the targed block
-  offset += sizeof(int);
-  memcpy(&currRecords, data1 + offset, sizeof(int)); //Getting the amount of records that exist in this block
+  memcpy(&nextPtr, data1 + sizeof(char) + sizeof(int), sizeof(int));        // Getting the nextPtr of the targed block
+  memcpy(&currRecords, data1 + sizeof(char) + 2*sizeof(int), sizeof(int));  //Getting the num of records that exist in this block
   maxRecords = (BF_BLOCK_SIZE - (sizeof(char) + sizeof(int)*3))/(len1 + len2);
 
   recordIndex = findRecordPos(data1, fileDesc, value1);  //Get the position it should go
