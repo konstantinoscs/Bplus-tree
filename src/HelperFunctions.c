@@ -163,8 +163,8 @@ int findLeaf(int fd, void *key, Stack *leafPath){
       //and the index number is smaller than the amount of keys in this block (so we are not on the last key) keep traversing
       memcpy(&tmpBlockPtr, data, sizeof(int));  //get the pointer to the child block that is before the new tmpKey
       data += sizeof(int);
-      memcpy(tmpKey, data, sizeof(int)); //get the new tmp key
-      data += sizeof(int);
+      memcpy(tmpKey, data, openFiles[fd]->length1); //get the new tmp key
+      data += openFiles[fd]->length1;
       currKey++;
     }
 
