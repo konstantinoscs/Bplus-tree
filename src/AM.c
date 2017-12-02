@@ -224,7 +224,7 @@ int AM_CloseIndex (int fileDesc) {
 }
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
-
+printf("-----------INSERTING-----------\n");
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
   void * rootData = NULL;
