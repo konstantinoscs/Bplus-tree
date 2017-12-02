@@ -249,7 +249,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
 int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
   static int i =0;
   printf("inserted %d keys\n", ++i);
-  printf("Entered leaf val\n");
+  printf("Entered index\n");
   //printf("key to insert %d\n", *(int *)value);
   BF_Block *curBlock;
   BF_Block_Init(&curBlock);
@@ -498,8 +498,8 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
 }
 
 bool leaf_block_has_space(int num_of_records, int len1, int len2){
-  int used_space = sizeof(bool)+3*sizeof(int)+num_of_records*(len1+len2);
-  int free_space = BF_BLOCK_SIZE - used_space;
+  int new_used_space = sizeof(bool)+3*sizeof(int)+(num_of_records+1)*(len1+len2);
+  int free_space = BF_BLOCK_SIZE - new_used_space;
   return free_space > 0 ? true : false;
 }
 

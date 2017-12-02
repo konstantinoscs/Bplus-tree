@@ -278,7 +278,6 @@ printf("-----------INSERTING-----------\n");
   //clean up
   printf("meta insert leaf\n");
   //destroy_stack(nodesPath);
-  printf("exiting insert");
   return AME_OK;
 }
 
