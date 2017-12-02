@@ -248,9 +248,11 @@ int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
     BF_Block_SetDirty(tmpBlock);
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   }
-  else  //if root is initialized
-    //create stack and push root to it
-    //call insert_leaf_val(value1,value2,fileDesc,nodesPath)
+  Stack *nodesPath;
+  create_stack(&nodesPath);
+  int rootId = memmove()
+  stack_push(nodesPath,rootId);
+  insert_leaf_val(value1,value2,fileDesc,nodesPath);
 }
 
 /*TOUTHANASI
