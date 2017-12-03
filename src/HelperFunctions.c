@@ -126,12 +126,12 @@ int findLeaf(int fd, void *key, Stack *leafPath){
   CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, rootId, tmpBlock)); //Get the root block to start searching
   data = BF_Block_GetData(tmpBlock);
 
-  memcpy(&isLeaf, data, sizeof(bool));
+  memmove(&isLeaf, data, sizeof(bool));
 
   if (openFiles[fd]->rootInitialized == 0) //If the root is not initialized so no insertion is done before
   {
     int offset = sizeof(bool) + sizeof(int)*4 + keyLength;
-    memcpy(&targetBlockId, data + offset, sizeof(int));
+    memmove(&targetBlockId, data + offset, sizeof(int));
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
     BF_Block_Destroy(&tmpBlock);
     return targetBlockId;
@@ -143,7 +143,7 @@ int findLeaf(int fd, void *key, Stack *leafPath){
 
     data += sizeof(char); //Move the data pointer over the isLeaf byte
 
-    memcpy(&tmpBlockId, data, sizeof(int)); //Take the id of the block we are currently checking
+    memmove(&tmpBlockId, data, sizeof(int)); //Take the id of the block we are currently checking
 
     if (leafPath != NULL) //In case it is null it means that in this function call we didnt need to keep the path too
     {
@@ -152,19 +152,19 @@ int findLeaf(int fd, void *key, Stack *leafPath){
 
     data += sizeof(int)*2;  //Move the data pointer over the block id and the next block pointer they are useless now
 
-    memcpy(&keysNumber, data, sizeof(int)); //Get the number of the keys that exist in this block
+    memmove(&keysNumber, data, sizeof(int)); //Get the number of the keys that exist in this block
     data += sizeof(int);
-    memcpy(&tmpBlockPtr, data, sizeof(int));  // Get the first pointer to child block that exist in this block
+    memmove(&tmpBlockPtr, data, sizeof(int));  // Get the first pointer to child block that exist in this block
     data += sizeof(int);
-    memcpy(tmpKey, data, openFiles[fd]->length1); //Get the value of the first key in this block
+    memmove(tmpKey, data, openFiles[fd]->length1); //Get the value of the first key in this block
     data += openFiles[fd]->length1;
     currKey++;  //Increase the index pointer
 
     while(keysComparer(key, tmpKey, GREATER_THAN_OR_EQUAL, keyType) && currKey < keysNumber){ //while the key that we look for is bigger than the key that we have now
       //and the index number is smaller than the amount of keys in this block (so we are not on the last key) keep traversing
-      memcpy(&tmpBlockPtr, data, sizeof(int));  //get the pointer to the child block that is before the new tmpKey
+      memmove(&tmpBlockPtr, data, sizeof(int));  //get the pointer to the child block that is before the new tmpKey
       data += sizeof(int);
-      memcpy(tmpKey, data, openFiles[fd]->length1); //get the new tmp key
+      memmove(tmpKey, data, openFiles[fd]->length1); //get the new tmp key
       data += openFiles[fd]->length1;
       currKey++;
     }
@@ -172,24 +172,24 @@ int findLeaf(int fd, void *key, Stack *leafPath){
     if (keysComparer(key, tmpKey, GREATER_THAN_OR_EQUAL, keyType))  //if the loop stopped because we reached the last key on this block but still the key
     //that we are looking for is bigger than the last key
     {
-      memcpy(&tmpBlockPtr, data, sizeof(int));  //Then get the last child pointer of this block
+      memmove(&tmpBlockPtr, data, sizeof(int));  //Then get the last child pointer of this block
       CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
       CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, tmpBlockPtr, tmpBlock));  //Get to this block
       data = BF_Block_GetData(tmpBlock);
-      memcpy(&isLeaf, data, sizeof(bool));  //And check if it is a leaf
+      memmove(&isLeaf, data, sizeof(bool));  //And check if it is a leaf
     }else{  //Otherwise the loop has stopped because we reached to the right position of the block and now we go to the correct child block
       CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
       CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, tmpBlockPtr, tmpBlock));
       data = BF_Block_GetData(tmpBlock);
-      memcpy(&isLeaf, data, sizeof(bool));
+      memmove(&isLeaf, data, sizeof(bool));
     }
   }
 
   //After all this loops we are on the block that our key exists or it should at least
   data += sizeof(char); //So move to the block id the data pointer
-  memcpy(&targetBlockId, data, sizeof(int));  //Get the block id
+  memmove(&targetBlockId, data, sizeof(int));  //Get the block id
   free(tmpKey);
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
@@ -211,7 +211,7 @@ int findMostLeftLeaf(int fd){
   CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, rootId, tmpBlock)); //Get the root block to start searching
   data = BF_Block_GetData(tmpBlock);
 
-  memcpy(&isLeaf, data, sizeof(bool));
+  memmove(&isLeaf, data, sizeof(bool));
 
   if (isLeaf == 1) //If the root is a leaf we are on the only leaf so the key should be here
   {
@@ -224,18 +224,18 @@ int findMostLeftLeaf(int fd){
 
     data += (sizeof(char) + sizeof(int)*3);  //Move the data pointer over the isLeaf byte,the block id, the next block pointer and the records num they are useless for now
 
-    memcpy(&tmpBlockPtr, data, sizeof(int));  // Get the first pointer to child block that exist in this block
+    memmove(&tmpBlockPtr, data, sizeof(int));  // Get the first pointer to child block that exist in this block
 
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
     CALL_OR_DIE(BF_GetBlock(openFiles[fd]->bf_desc, tmpBlockPtr, tmpBlock));  //Get to the child block
     data = BF_Block_GetData(tmpBlock);
-    memcpy(&isLeaf, data, sizeof(bool));
+    memmove(&isLeaf, data, sizeof(bool));
   }
 
   //After all this loops we are on the leaf block that is the most left
   data += sizeof(char); //So move to the block id the data pointer
-  memcpy(&targetBlockId, data, sizeof(int));  //Get the block id
+  memmove(&targetBlockId, data, sizeof(int));  //Get the block id
 
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
@@ -274,12 +274,12 @@ void simpleInsertToLeaf(int recordIndex, int fd, void* data, int currRecords, vo
   offset = (sizeof(char) + sizeof(int)*3 + recordIndex*(len1 + len2));  //Get the offset to that position
   //Move all the records after that position right by recordSize (len1 + len 2)
   memmove(data + offset + len1 + len2, data + offset, (currRecords - recordIndex)*(len1 + len2));
-  memcpy(data + offset, value1, len1);  //Write to the space we made the new record
+  memmove(data + offset, value1, len1);  //Write to the space we made the new record
   offset += len1;
-  memcpy(data + offset, value2, len2);
+  memmove(data + offset, value2, len2);
   currRecords++;
   offset = (sizeof(char) + sizeof(int)*2);
-  memcpy(data + offset, &currRecords, sizeof(int)); //Write the new current number of records to the block
+  memmove(data + offset, &currRecords, sizeof(int)); //Write the new current number of records to the block
 }
 
 /************************************************
@@ -321,16 +321,16 @@ int typeChecker(char attrType, int attrLength, int *type, int *len){
 //Initializing a new blocks metadata
 void blockMetadataInit(void *data, bool isLeaf, int blockId, int nextPtr, int recordsNum){
   //bool isLeaf
-  memcpy(data, &isLeaf, sizeof(char));
+  memmove(data, &isLeaf, sizeof(char));
   //int blockId
   data += sizeof(bool);
-  memcpy(data, &blockId, sizeof(int)); //Writing the block's id to it
+  memmove(data, &blockId, sizeof(int)); //Writing the block's id to it
   //int nextPtr
   data += sizeof(int);
-  memcpy(data, &nextPtr, sizeof(int));
+  memmove(data, &nextPtr, sizeof(int));
   //int recordsNum
   data += sizeof(int);
-  memcpy(data, &recordsNum, sizeof(int));
+  memmove(data, &recordsNum, sizeof(int));
 }
 
 //Returning how many keys are equal to the target key
@@ -340,7 +340,7 @@ int sameKeysCount(void *data, void *targetKey, int length, int type, int currRec
   void *tmpKey = NULL;
   int currIndex = 0;
   offset = sizeof(char) + sizeof(int)*3;
-  memcpy(tmpKey, data + offset, length);
+  memmove(tmpKey, data + offset, length);
   while(currIndex < currRecords){
     if (keysComparer(targetKey, tmpKey, EQUAL, type))
     {
@@ -462,14 +462,14 @@ void PrintIndexBlock(char *data, int fileDesc){/*
   char *key;
   key = malloc(openFiles[fileDesc]->length1);
 
-  memcpy(&currKeys, data + offset, sizeof(int));
+  memmove(&currKeys, data + offset, sizeof(int));
   offset += sizeof(int);
 
   for (i = 0; i < currKeys; ++i)
   {
-    memcpy(&blockPtr, data + offset, sizeof(int));
+    memmove(&blockPtr, data + offset, sizeof(int));
     offset+=sizeof(int);
-    memcpy(key, data + offset, len);
+    memmove(key, data + offset, len);
     offset+=len;
     if (type == INTEGER)
     {
@@ -481,7 +481,7 @@ void PrintIndexBlock(char *data, int fileDesc){/*
       printf("%d-%s-", blockPtr, key);
     }
   }
-  memcpy(&blockPtr, data + offset, sizeof(int));
+  memmove(&blockPtr, data + offset, sizeof(int));
   printf("%d\n", tmpBlockPtr);
 
   free(key);
