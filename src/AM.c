@@ -633,7 +633,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }
                   //now we've got a record that is less_than, so lets return it
-                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -654,7 +654,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }while(!keysComparer(recordAttr1,scan->value,LESS_THAN,file->type1));  //is this record less_than? if not check the next record untill you find one that is less_than
                   //now we've got a record that is less_than, so lets return it
-                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
