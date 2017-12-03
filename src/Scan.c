@@ -46,6 +46,7 @@ int ScanNextRecord(Scan* scan, BF_Block** block_ptr,char** data_ptr){
 	memcpy(&num_of_records,(*data_ptr)+sizeof(char)+2*sizeof(int),sizeof(int));
 	//is the next record in this or the next block?
 	if(scan->record_num >= num_of_records){  //if its in the next block
+printf("ScanNextRecord changing block at record_num:%d\n", scan->record_num);
 		int next_block_num;
 		memcpy(&next_block_num,(*data_ptr)+sizeof(char)+sizeof(int),sizeof(int));
 		if(next_block_num == -1){  //if there is no next block, end Scan
