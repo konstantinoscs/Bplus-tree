@@ -84,6 +84,8 @@ void PrintIndexBlock(char* data,int);
 
 int BlockIsLeaf(char * data);
 
+void PrintLeafBlock(char*,int);
+
 void PrintAttr(char* data, int type, int len);
 
 #endif
