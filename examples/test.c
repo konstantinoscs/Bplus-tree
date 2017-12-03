@@ -25,8 +25,8 @@ void main(void){
   printf("PAO GIA SCAN\n");
   //SCAN
   int value1=50;
-  int scanDesc = AM_OpenIndexScan(fd, LESS_THAN, &value1);
-  for(int i=0; i<NUM_OF_INSERTS; i++){
+  int scanDesc = AM_OpenIndexScan(fd, GREATER_THAN, &value1);
+  for(int i=0; i<100; i++){
     int* value2 = AM_FindNextEntry(scanDesc);
     if( value2 == NULL)
       printf("%d.NULL\n", i);
