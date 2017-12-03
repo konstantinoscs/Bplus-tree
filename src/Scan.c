@@ -74,6 +74,6 @@ printf("old block:%d newblock:%d\n", scan->block_num,next_block_num);
 	}
 	else{	//return the offset of the next record (in this block)
 		file_info* file = openFiles[scan->fileDesc];
-		return sizeof(char)+3*sizeof(int)+(scan->record_num)*(sizeof(file->length1)+sizeof(file->length2));
+		return sizeof(char)+3*sizeof(int)+(scan->record_num)*(file->length1+file->length2);
 	}
 }

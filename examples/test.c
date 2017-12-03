@@ -27,14 +27,14 @@ void main(void){
   printf("PAO GIA SCAN\n");
   //SCAN
   char value1[5] = "50";
-  int scanDesc = AM_OpenIndexScan(fd, EQUAL, &value1);
-  //for(int i=0; i<NUM_OF_INSERTS; i++){
+  int scanDesc = AM_OpenIndexScan(fd, LESS_THAN, &value1);
+  for(int i=0; i<500; i++){
     char* value2 = AM_FindNextEntry(scanDesc);
     if( value2 == NULL)
       printf("NULL\n");
     else
       printf("%s\n", value2);
-  //}
+  }
 
   AM_CloseIndex(fd);
 }
