@@ -80,8 +80,10 @@ void PrintTree(int fileDesc);
 
 void PrintBlockMetadata(char* data);
 
-void PrintIndexBlock(char* data);
+void PrintIndexBlock(char* data,int);
 
 int BlockIsLeaf(char * data);
+
+void PrintAttr(char* data, int type, int len);
 
 #endif

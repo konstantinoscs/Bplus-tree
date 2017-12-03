@@ -409,7 +409,7 @@ void PrintTree(int fileDesc){
   PrintBlockMetadata(data);
 
   if(!BlockIsLeaf(data)){
-    PrintIndexBlock(data);
+    PrintIndexBlock(data,fileDesc);
   }
   else{
 
@@ -431,6 +431,68 @@ int BlockIsLeaf(char* data){
   return isLeaf;
 }
 
-void PrintIndexBlock(char* data){
+void PrintLeafBlock(char* data, int fd){
+  int num_of_records;
+  memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int));
 
+  int type1 = openFiles[fd]->type1;
+  int type2 = openFiles[fd]->type2;
+  int len1 = openFiles[fd]->length1;
+  int len2 = openFiles[fd]->length2;
+
+  int offset = sizeof(bool)+3*sizeof(int);
+  for(int i=0; i<num_of_records; i++){
+    PrintAttr(data+offset,type1,len1);
+    printf("-");
+    PrintAttr(data+offset+len1,type2,len2);
+    offset += len1+len2;
+  }
 }
+
+void PrintIndexBlock(char *data, int fileDesc){/*
+  int currKeys = 0;
+  int i;
+  int offset = sizeof(char) + sizeof(int)*2;
+  int blockPtr, type, len;
+  blockPtr = 0;
+  len = openFiles[fileDesc]->length1;
+  type = openFiles[fileDesc]->type1;
+  char *key;
+  key = malloc(openFiles[fileDesc]->length1);
+
+  memcpy(&currKeys, data + offset, sizeof(int));
+  offset += sizeof(int);
+
+  for (i = 0; i < currKeys; ++i)
+  {
+    memcpy(&blockPtr, data + offset, sizeof(int));
+    offset+=sizeof(int);
+    memcpy(key, data + offset, len);
+    offset+=len;
+    if (type == INTEGER)
+    {
+      printf("%d-%d-", blockPtr, key);
+    }else if (type == FLOAT)
+    {
+      printf("%d-%f-", blockPtr, key);
+    }else{
+      printf("%d-%s-", blockPtr, key);
+    }
+  }
+  memcpy(&blockPtr, data + offset, sizeof(int));
+  printf("%d\n", tmpBlockPtr);
+
+  free(key);
+*/}
+
+
+void PrintAttr(char* data, int type, int len){
+/*  switch(type1){
+    case 1: //int
+      printf("%d", *data);
+      break;
+    case 2: //float
+      break;
+    case 3: //string
+  }
+*/}
