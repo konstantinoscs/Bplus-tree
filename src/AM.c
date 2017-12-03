@@ -278,7 +278,7 @@ printf("-----------INSERTING-----------\n");
   insert_leaf_val(value1,value2,fileDesc,nodesPath);
   //clean up
   printf("meta insert leaf\n");
-  //destroy_stack(nodesPath);
+  destroy_stack(nodesPath);
   return AME_OK;
 }
 
