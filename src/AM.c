@@ -60,18 +60,18 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
 
   data = BF_Block_GetData(tmpBlock);
   strcpy(keyWord,"DIBLU$");
-  memcpy(data, keyWord, sizeof(char)*15);//Copying the key-phrase DIBLU$ that shows us that this is a B+ file
+  memmove(data, keyWord, sizeof(char)*15);//Copying the key-phrase DIBLU$ that shows us that this is a B+ file
   data += sizeof(char)*15;
   //Writing the attr1 and attr2 type and length right after the keyWord in the metadata block and a flag that root has no key yet
-  memcpy(data, &type1, sizeof(int));
+  memmove(data, &type1, sizeof(int));
   data += sizeof(int);
-  memcpy(data, &len1, sizeof(int));
+  memmove(data, &len1, sizeof(int));
   data += sizeof(int);
-  memcpy(data, &type2, sizeof(int));
+  memmove(data, &type2, sizeof(int));
   data += sizeof(int);
-  memcpy(data, &len2, sizeof(int));
+  memmove(data, &len2, sizeof(int));
   data += sizeof(int)*2;
-  memcpy(data, &rootInitialized, sizeof(int));
+  memmove(data, &rootInitialized, sizeof(int));
 
   BF_Block_SetDirty(tmpBlock);
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
@@ -126,9 +126,9 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   CALL_OR_DIE(BF_GetBlock(fd, blockNum, tmpBlock));
   data = BF_Block_GetData(tmpBlock);
   data += (sizeof(char) + sizeof(int)*3);
-  memcpy(data, &downLeftBlock, sizeof(int));
+  memmove(data, &downLeftBlock, sizeof(int));
   data += (sizeof(int) + len1);
-  memcpy(data, &downRightBlock, sizeof(int));
+  memmove(data, &downRightBlock, sizeof(int));
 
   BF_Block_SetDirty(tmpBlock);
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
@@ -138,7 +138,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   data = BF_Block_GetData(tmpBlock);
   data += (sizeof(char)*15 + sizeof(int)*4);
   //printf("GRAFW %d\n", blockNum);
-  memcpy(data, &blockNum, sizeof(int));
+  memmove(data, &blockNum, sizeof(int));
   BF_Block_SetDirty(tmpBlock);
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
 
@@ -179,17 +179,17 @@ int AM_OpenIndex (char *fileName) {
 
   data += sizeof(char)*15; //skip the diblus keyword
   //Getting the attr1 and attr2 type and length from the metadata block
-  memcpy(&type1, data, sizeof(int));
+  memmove(&type1, data, sizeof(int));
   data += sizeof(int);
-  memcpy(&len1, data, sizeof(int));
+  memmove(&len1, data, sizeof(int));
   data += sizeof(int);
-  memcpy(&type2, data, sizeof(int));
+  memmove(&type2, data, sizeof(int));
   data += sizeof(int);
-  memcpy(&len2, data, sizeof(int));
+  memmove(&len2, data, sizeof(int));
   data += sizeof(int);
-  memcpy(&rootId, data, sizeof(int));
+  memmove(&rootId, data, sizeof(int));
   data += sizeof(int);
-  memcpy(&rootInitialized, data, sizeof(int));
+  memmove(&rootInitialized, data, sizeof(int));
 printf("OPENINDEX len1: %d len2: %d\n", len1, len2 );
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
@@ -205,9 +205,9 @@ printf("OPENINDEX len1: %d len2: %d\n", len1, len2 );
 
   /*data += sizeof(char)*15;
   int type, len;
-  memcpy(&type, data, sizeof(int));
+  memmove(&type, data, sizeof(int));
   data += sizeof(int);
-  memcpy(&len, data, sizeof(int));
+  memmove(&len, data, sizeof(int));
 
   printf("%d %d\n", type, len);*/
 
@@ -245,9 +245,9 @@ printf("-----------INSERTING-----------\n");
     rootData = BF_Block_GetData(tmpBlock);//and its data
     offset = sizeof(char) + sizeof(int)*2;
     int currKeys = 1;
-    memcpy(rootData + offset, &currKeys, sizeof(int));  //Increasing the number of current keys to root to one
+    memmove(rootData + offset, &currKeys, sizeof(int));  //Increasing the number of current keys to root to one
     offset += sizeof(int)*2;
-    memcpy(rootData + offset, value1, len1);  //Writing the first value of the new record as a key to the root
+    memmove(rootData + offset, value1, len1);  //Writing the first value of the new record as a key to the root
     openFiles[fileDesc]->rootInitialized = 1; //The root now is initialized
     BF_Block_SetDirty(tmpBlock);
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
@@ -257,7 +257,7 @@ printf("-----------INSERTING-----------\n");
 
     offset = sizeof(char)*15 + sizeof(int)*5;
     int rootInitialized = 1;
-    memcpy(rootData + offset, &rootInitialized, sizeof(int));
+    memmove(rootData + offset, &rootInitialized, sizeof(int));
 
     BF_Block_SetDirty(tmpBlock);
     CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
@@ -278,7 +278,7 @@ printf("-----------INSERTING-----------\n");
   insert_leaf_val(value1,value2,fileDesc,nodesPath);
   //clean up
   printf("meta insert leaf\n");
-  //destroy_stack(nodesPath);
+  destroy_stack(nodesPath);
   return AME_OK;
 }
 
@@ -312,8 +312,8 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
   CALL_OR_DIE(BF_GetBlock(openFiles[fileDesc]->bf_desc, targetBlockId, tmpBlock1));
   data1 = BF_Block_GetData(tmpBlock1);  //and its data
 
-  memcpy(&nextPtr, data1 + sizeof(char) + sizeof(int), sizeof(int));        // Getting the nextPtr of the targed block
-  memcpy(&currRecords, data1 + sizeof(char) + 2*sizeof(int), sizeof(int));  //Getting the num of records that exist in this block
+  memmove(&nextPtr, data1 + sizeof(char) + sizeof(int), sizeof(int));        // Getting the nextPtr of the targed block
+  memmove(&currRecords, data1 + sizeof(char) + 2*sizeof(int), sizeof(int));  //Getting the num of records that exist in this block
   maxRecords = (BF_BLOCK_SIZE - (sizeof(char) + sizeof(int)*3))/(len1 + len2);
 
   recordIndex = findRecordPos(data1, fileDesc, value1);  //Get the position it should go
@@ -331,9 +331,9 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
       rootData = BF_Block_GetData(tmpBlock);//and its data
       offset = sizeof(char) + sizeof(int)*2;
       int currKeys = 1;
-      memcpy(rootData + offset, &currKeys, sizeof(int));  //Increasing the number of current keys to root to one
+      memmove(rootData + offset, &currKeys, sizeof(int));  //Increasing the number of current keys to root to one
       offset += sizeof(int)*2;
-      memcpy(rootData + offset, value1, len1);  //Writing the first value of the new record as a key to the root
+      memmove(rootData + offset, value1, len1);  //Writing the first value of the new record as a key to the root
       openFiles[fileDesc]->rootInitialized = 1; //The root now is initialized
       BF_Block_SetDirty(tmpBlock);
       CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
@@ -343,7 +343,7 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
 
       offset = sizeof(char)*15 + sizeof(int)*5;
       int rootInitialized = 1;
-      memcpy(rootData + offset, &rootInitialized, sizeof(int));
+      memmove(rootData + offset, &rootInitialized, sizeof(int));
 
       BF_Block_SetDirty(tmpBlock);
       CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
@@ -357,7 +357,7 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
     blockId--;
 
     offset = (sizeof(char) + sizeof(int));
-    memcpy(data1 + offset, &blockId, sizeof(int));  //Set as next of the old block the new block
+    memmove(data1 + offset, &blockId, sizeof(int));  //Set as next of the old block the new block
 
     data2 = BF_Block_GetData(tmpBlock2);
 
@@ -374,38 +374,38 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
     offset = sizeof(char) + 3*sizeof(int);
     //will the new record go to the old or the new block?
     if (!goesToNew){  //If the new record goes to the old block
-      memcpy(data2 + offset, data1+offset+(numRecToOld-1)*(len1+len2),numRecToNew*(len1+len2));
+      memmove(data2 + offset, data1+offset+(numRecToOld-1)*(len1+len2),numRecToNew*(len1+len2));
       //Updating the block counters of the old and the new block
       offset = sizeof(char) + sizeof(int)*2;
-      memcpy(data1 + offset, &numRecToOld, sizeof(int));
-      memcpy(data2 + offset, &numRecToNew, sizeof(int));
+      memmove(data1 + offset, &numRecToOld, sizeof(int));
+      memmove(data2 + offset, &numRecToNew, sizeof(int));
       //inserting the new record in the old block
       recordIndex = findRecordPos(data1, fileDesc, value1);  //Get the position it should go again in case something changed
       simpleInsertToLeaf(recordIndex, fileDesc, data1, numRecToOld-1, value1, value2); //Make a simple insertion to the old block
     }
     else{           //If the new record goes to the new block
-      memcpy(data2 + offset, data1+offset+numRecToOld*(len1+len2),numRecToNew*(len1+len2));
+      memmove(data2 + offset, data1+offset+numRecToOld*(len1+len2),numRecToNew*(len1+len2));
       //Updating the block counters of the old and the new block
       offset = sizeof(char) + sizeof(int)*2;
-      memcpy(data1 + offset, &numRecToOld, sizeof(int));
-      memcpy(data2 + offset, &numRecToNew, sizeof(int));
+      memmove(data1 + offset, &numRecToOld, sizeof(int));
+      memmove(data2 + offset, &numRecToNew, sizeof(int));
       //inserting the new record to the new block
       recordIndex = findRecordPos(data2, fileDesc, value1);  //Get the position it should go again in case something changed
       simpleInsertToLeaf(recordIndex, fileDesc, data2, numRecToNew-1, value1, value2);  //Make a simple insertion to the old block
     }
      //Take the first attribute of the new block as a key to its parent
     char *newKey = malloc(len1);
-    memcpy(newKey, data2+sizeof(char)+3*sizeof(int), len1); //newKey will be the 1st key of the new(right) block
+    memmove(newKey, data2+sizeof(char)+3*sizeof(int), len1); //newKey will be the 1st key of the new(right) block
 
     /*int currRecords1, currRecords2;
     char *lastKey = malloc(len1);
 
     offset = sizeof(char) + sizeof(int)*2;
-    memcpy(&currRecords1, data1 + offset, sizeof(int));
-    memcpy(&currRecords2, data2 + offset, sizeof(int));
+    memmove(&currRecords1, data1 + offset, sizeof(int));
+    memmove(&currRecords2, data2 + offset, sizeof(int));
 
     offset += (sizeof(int) + (currRecords1 - 1)*(len1 + len2));
-    memcpy(lastKey, data1 + offset, len1);
+    memmove(lastKey, data1 + offset, len1);
 
     if (keysComparer(lastKey, newKey, EQUAL, type1))
     {
@@ -416,14 +416,14 @@ printf("INSERT type1:%d type2:%d len1: %d len2: %d\n", type1, type2, len1, len2 
       {
         offset = sizeof(char) + sizeof(int)*3 + currRecords1*(len1 + len2);
         offset2 = sizeof(char) + sizeof(int)*3;
-        memcpy(data1 + offset, data2 + offset2, sameKeys2*(len1 + len2));
+        memmove(data1 + offset, data2 + offset2, sameKeys2*(len1 + len2));
         currRecords1 += sameKeys2;
         currRecords2 -= sameKeys2;
-        memcpy(data2 + offset2, data2 + offset2 + sameKeys2*(len1 +len2), currRecords2*(len1 + len2));
+        memmove(data2 + offset2, data2 + offset2 + sameKeys2*(len1 +len2), currRecords2*(len1 + len2));
         offset = sizeof(char) + sizeof(int)*2;
         offset2 = sizeof(char) + sizeof(int)*2;
-        memcpy(data1 + offset, currRecords1, sizeof(int));
-        memcpy(data2 + offset2, currRecords2, sizeof(int));
+        memmove(data1 + offset, currRecords1, sizeof(int));
+        memmove(data2 + offset2, currRecords2, sizeof(int));
       }else
       {
 
@@ -509,7 +509,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }
                   //now we've got a record that is EQUAL, so lets return it
-                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -530,7 +530,7 @@ void *AM_FindNextEntry(int scanDesc) {
                     recordAttr1 = data+next_record_offset;
                   //is the next record is equal as well?
                   if(keysComparer(recordAttr1, scan->value, EQUAL, file->type1)){  //if it is equal
-                    memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                    memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                     //clear block
                     BF_UnpinBlock(block);
                     BF_Block_Destroy(&block);
@@ -576,7 +576,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }
                   //now we've got a record that is not_equal, so lets return it
-                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -598,7 +598,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }while(!keysComparer(recordAttr1,scan->value,NOT_EQUAL,file->type1));  //is this record not_equal? if not check the next record untill you find one that is not_equal
                   //now we've got a record that is not_equal, so lets return it
-                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -633,7 +633,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }
                   //now we've got a record that is less_than, so lets return it
-                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -654,7 +654,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }while(!keysComparer(recordAttr1,scan->value,LESS_THAN,file->type1));  //is this record less_than? if not check the next record untill you find one that is less_than
                   //now we've got a record that is less_than, so lets return it
-                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -681,7 +681,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   };
                   //now we've got a GREATER_THAN record, so lets return it
-                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -700,7 +700,7 @@ void *AM_FindNextEntry(int scanDesc) {
                   else
                     recordAttr1 = data+next_record_offset;
                   //next record is deffinetely GREATER_THAN, so lets return it
-                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -736,7 +736,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }
                   //now we've got a record that is LESS_THAN_OR_EQUAL, so lets return it
-                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -757,7 +757,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }while(!keysComparer(recordAttr1,scan->value,LESS_THAN_OR_EQUAL,file->type1));  //is this record LESS_THAN_OR_EQUAL? if not check the next record untill you find one that
                   //now we've got a record that is LESS_THAN_OR_EQUAL, so lets return it
-                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -784,7 +784,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }
                   //now we've got a record that is GREATER_THAN_OR_EQUAL, so lets return it
-                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -803,7 +803,7 @@ void *AM_FindNextEntry(int scanDesc) {
                   else
                     recordAttr1 = data+next_record_offset;
                   //next record is deffinetely GREATER_THAN, so lets return it
-                  memcpy(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);

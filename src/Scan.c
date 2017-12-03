@@ -55,6 +55,7 @@ printf("ScanNextRecord changing block at record_num%d>=%d\n", scan->record_num,n
 			scan->ScanIsOver = true;
 			BF_UnpinBlock(*block_ptr);
 			BF_Block_Destroy(block_ptr);
+			printf("NO_NEXT_BLOCK");
 			return NO_NEXT_BLOCK;
 		}
 		//get rid of old block

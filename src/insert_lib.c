@@ -203,7 +203,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
   }
   else{
     printf("Split and pass\n");
-    getchar();
+    //getchar();
     //split and pass one level up
     BF_Block *newBlock;
     BF_Block_Init(&newBlock);
@@ -254,7 +254,7 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
   static int i =0;
   printf("inserted %d leafs\n", ++i);
   printf("Entered leaf\n");
-  print_stack(stack);
+  //print_stack(stack);
   //printf("key to insert %d\n", *(int *)value);
   BF_Block *curBlock;
   BF_Block_Init(&curBlock);
@@ -322,8 +322,9 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     offset = sizeof(bool) + 2*sizeof(int);
     records++;
     memmove(data+offset, &records, sizeof(int));
-    //BF_Block_SetDirty(curBlock);
-    printf("Records after insert are %d\n", records);
+    BF_Block_SetDirty(curBlock);
+    BF_UnpinBlock(curBlock);
+    return 1;
   }
   else{
     printf("Split and insert\n");
@@ -346,7 +347,6 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     int recs_in1st = records +1 - recs_in2nd;
     char * mid_value = malloc(size1);
     find_middle_record(data, mid_value, value1, type1, size1, size2, recs_in1st);
-/////////////////////////////////////////////////////////////////////////////////////////////
     //partition with caution for same values
     leaf_partition(data, new_data, mid_value, type1, size1, size2, records+1,
       value1, value2);
@@ -355,14 +355,14 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     //cleanup
     BF_Block_SetDirty(newBlock);
     BF_UnpinBlock(newBlock);
+    BF_Block_SetDirty(curBlock);
+    BF_UnpinBlock(curBlock);
     BF_Block_Destroy(&newBlock);
     stack_pop(stack);
     insert_index_val(mid_value, fileDesc, stack, new_id);
 
     free(mid_value);
   }
-  BF_Block_SetDirty(curBlock);
-  BF_UnpinBlock(curBlock);
   BF_Block_Destroy(&curBlock);
 
 }
