@@ -556,6 +556,13 @@ void *AM_FindNextEntry(int scanDesc) {
                   BF_GetBlock(file->bf_desc,scan->block_num,block);
                   //get blocks data
                   char* data = BF_Block_GetData(block);
+                  //make sure this block is not empty
+                  int num_of_records;
+                  memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int));
+                  while(num_of_records == 0){
+                    ScanNextRecord(scan,&block,&data);  //next block
+                    memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int)); //update num_of_records
+                  }
                   //find the first record of this block
                   scan->record_num = 0;
                   void* recordAttr1 = data+sizeof(char)+3*sizeof(int);
@@ -606,10 +613,17 @@ void *AM_FindNextEntry(int scanDesc) {
                   BF_GetBlock(file->bf_desc,scan->block_num,block);
                   //get blocks data
                   char* data = BF_Block_GetData(block);
+                  //make sure this block is not empty
+                  int num_of_records;
+                  memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int));
+                  while(num_of_records == 0){
+                    ScanNextRecord(scan,&block,&data);  //next block
+                    memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int)); //update num_of_records
+                  }
                   //find the first record of this block
                   scan->record_num = 0;
                   void* recordAttr1 = data+sizeof(char)+3*sizeof(int);
-                  //is this record less_than?
+                  //is this record less_than?SVISE
                   while(!keysComparer(recordAttr1,scan->value,LESS_THAN,file->type1)){  //if not check the next record until you find one that is less_than
                     int next_record_offset = ScanNextRecord(scan,&block,&data);
                     if(next_record_offset == NO_NEXT_BLOCK)
@@ -701,6 +715,13 @@ void *AM_FindNextEntry(int scanDesc) {
                   BF_GetBlock(file->bf_desc,scan->block_num,block);
                   //get blocks data
                   char* data = BF_Block_GetData(block);
+                  //make sure this block is not empty
+                  int num_of_records;
+                  memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int));
+                  while(num_of_records == 0){
+                    ScanNextRecord(scan,&block,&data);  //next block
+                    memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int)); //update num_of_records
+                  }
                   //find the first record of this block
                   scan->record_num = 0;
                   void* recordAttr1 = data+sizeof(char)+3*sizeof(int);

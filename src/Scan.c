@@ -71,6 +71,6 @@ int ScanNextRecord(Scan* scan, BF_Block** block_ptr,char** data_ptr){
 	}
 	else{	//return the offset of the next record (in this block)
 		file_info* file = openFiles[scan->fileDesc];
-		return sizeof(char)+3*sizeof(int)+(scan->record_num-1)*(sizeof(file->length1)+sizeof(file->length2));
+		return sizeof(char)+3*sizeof(int)+(scan->record_num)*(sizeof(file->length1)+sizeof(file->length2));
 	}
 }
