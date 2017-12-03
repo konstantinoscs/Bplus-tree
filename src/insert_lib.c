@@ -88,7 +88,6 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
   //open block and get its data
   BF_GetBlock(bf_no, block_no, curBlock);
   char * data = BF_Block_GetData(curBlock);
-  print_block(data);
   //get the number of keys because we may have to update the number later
   int offset = sizeof(bool) + 2*sizeof(int);
   int keys = 0;
@@ -117,7 +116,6 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
     memmove(data+offset, &keys, sizeof(int));
     //done :)
     BF_Block_SetDirty(curBlock);
-    print_block(data);
   }
   else if(is_root(block_no, fileDesc)){
     //split and update root
