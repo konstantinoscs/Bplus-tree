@@ -35,7 +35,9 @@ void close_file(int i){
 
 void delete_files(){
 	for(int i=0; i<20; i++){
-		if(openFiles[i]!= NULL)
-			free(openFiles[i]);
+		if(openFiles[i]!= NULL){
+      free(openFiles[i]);
+      openFiles[i] = NULL;
+    }
 	}
 }

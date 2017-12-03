@@ -199,21 +199,15 @@ int AM_OpenIndex (char *fileName) {
   insert_bfd(file_index, fileDesc);
   insert_root(file_index, rootId);
 
-  /*data += sizeof(char)*15;
-  int type, len;
-  memmove(&type, data, sizeof(int));
-  data += sizeof(int);
-  memmove(&len, data, sizeof(int));
-
-  printf("%d %d\n", type, len);*/
-
-  //return the file index
   return file_index;
 }
 
 
 int AM_CloseIndex (int fileDesc) {
-  //TODO other stuff?
+  //does this file have an open Scan?
+  if(hasOpenScan(fileDesc)){  //if yes then AM_CloseIndex should not have been called
+    return HAS_OPEN_SCAN;
+  }
   CALL_OR_DIE(BF_CloseFile(openFiles[fileDesc]->bf_desc));
   //remove the file from the openFiles array
   close_file(fileDesc);
@@ -541,7 +535,6 @@ void *AM_FindNextEntry(int scanDesc) {
                   //make sure this block is not empty
                   int num_of_records;
                   memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int));
-            PrintLeafBlock(data,scan->fileDesc);
                   while(num_of_records == 0){
                     ScanNextRecord(scan,&block,&data);  //next block
                     memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int)); //update num_of_records
@@ -573,7 +566,6 @@ void *AM_FindNextEntry(int scanDesc) {
                   BF_GetBlock(file->bf_desc,scan->block_num,block);
                   char* data = BF_Block_GetData(block);
                   void* recordAttr1;
-  PrintLeafBlock(data,scan->fileDesc);
                   //look at the next record
                   do{
                     int next_record_offset = ScanNextRecord(scan,&block,&data);
