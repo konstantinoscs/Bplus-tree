@@ -430,7 +430,7 @@ int partition(char *ldata, char *rdata, char * mid_key, void * key,
   //copy all the key/pointer pairs
   for(int i=0; i<keys_in2nd; i++){
     //copy the key
-    if(keysComparer(key, ldata+loffset, LESS_THAN, keytype) || loffset >=total_size){
+    if(loffset >=total_size || keysComparer(key, ldata+loffset, LESS_THAN, keytype)){
       memmove(rdata+roffset, key, keysize);
       roffset += keysize;
       memmove(rdata+roffset, &newbid, sizeof(int));
