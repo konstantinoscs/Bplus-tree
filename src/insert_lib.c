@@ -289,7 +289,6 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     memmove(data+offset, &records, sizeof(int));
     BF_Block_SetDirty(curBlock);
     BF_UnpinBlock(curBlock);
-    return 1;
   }
   else{
     //split block and insert record
