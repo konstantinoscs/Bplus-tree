@@ -285,6 +285,7 @@ void *AM_FindNextEntry(int scanDesc) {
   file_info* file = openFiles[scan->fileDesc];
 
   if(scan->ScanIsOver){
+    AM_errno=AME_EOF;
     if(scan->return_value != NULL)
       free(scan->return_value);
     return NULL;
@@ -307,8 +308,10 @@ void *AM_FindNextEntry(int scanDesc) {
                   //is this record equal?
                   while(!keysComparer(recordAttr1,scan->value,EQUAL,file->type1)){
                     int next_record_offset = ScanNextRecord(scan,&block,&data);
-                    if(next_record_offset == NO_NEXT_BLOCK)
+                    if(next_record_offset == NO_NEXT_BLOCK){
+                      AM_errno=AME_EOF;
                       return NULL;  //end the Scan
+                    }
                     else
                       recordAttr1 = data+next_record_offset;
                   }
@@ -328,8 +331,10 @@ void *AM_FindNextEntry(int scanDesc) {
                   //look at the next record
                   int next_record_offset = ScanNextRecord(scan,&block,&data);
                   void* recordAttr1;
-                  if(next_record_offset == NO_NEXT_BLOCK)
+                  if(next_record_offset == NO_NEXT_BLOCK){
+                    AM_errno=AME_EOF;
                     return NULL;  //end the Scan
+                  }
                   else
                     recordAttr1 = data+next_record_offset;
                   //is the next record is equal as well?
@@ -347,6 +352,7 @@ void *AM_FindNextEntry(int scanDesc) {
                     //clear block
                     BF_UnpinBlock(block);
                     BF_Block_Destroy(&block);
+                    AM_errno=AME_EOF;
                     return NULL;
                   }
                 }
@@ -374,8 +380,10 @@ void *AM_FindNextEntry(int scanDesc) {
                   //is this record not_equal?
                   while(!keysComparer(recordAttr1,scan->value,NOT_EQUAL,file->type1)){  //if not check the next record until you find one that is not_equal
                     int next_record_offset = ScanNextRecord(scan,&block,&data);
-                    if(next_record_offset == NO_NEXT_BLOCK)
+                    if(next_record_offset == NO_NEXT_BLOCK){
+                      AM_errno=AME_EOF;
                       return NULL;  //end the Scan
+                    }
                     else
                       recordAttr1 = data+next_record_offset;
                   }
@@ -396,8 +404,10 @@ void *AM_FindNextEntry(int scanDesc) {
                   //look at the next record
                   do{
                     int next_record_offset = ScanNextRecord(scan,&block,&data);
-                    if(next_record_offset == NO_NEXT_BLOCK)
+                    if(next_record_offset == NO_NEXT_BLOCK){
+                      AM_errno=AME_EOF;
                       return NULL;  //if there is no next block we end the Scan
+                    }
                     else
                       recordAttr1 = data+next_record_offset;
                   }while(!keysComparer(recordAttr1,scan->value,NOT_EQUAL,file->type1));  //is this record not_equal? if not check the next record untill you find one that is not_equal
@@ -431,8 +441,10 @@ void *AM_FindNextEntry(int scanDesc) {
                   //is this record less_than?SVISE
                   while(!keysComparer(recordAttr1,scan->value,LESS_THAN,file->type1)){  //if not check the next record until you find one that is less_than
                     int next_record_offset = ScanNextRecord(scan,&block,&data);
-                    if(next_record_offset == NO_NEXT_BLOCK)
+                    if(next_record_offset == NO_NEXT_BLOCK){
+                      AM_errno=AME_EOF;
                       return NULL;  //end the Scan
+                    }
                     else
                       recordAttr1 = data+next_record_offset;
                   }
@@ -452,8 +464,10 @@ void *AM_FindNextEntry(int scanDesc) {
                   //look at the next record
                   do{
                     int next_record_offset = ScanNextRecord(scan,&block,&data);
-                    if(next_record_offset == NO_NEXT_BLOCK)
+                    if(next_record_offset == NO_NEXT_BLOCK){
+                      AM_errno=AME_EOF;
                       return NULL;  //if there is no next block we end the Scan
+                    }
                     else
                       recordAttr1 = data+next_record_offset;
                   }while(!keysComparer(recordAttr1,scan->value,LESS_THAN,file->type1));  //is this record less_than? if not check the next record untill you find one that is less_than
@@ -479,8 +493,10 @@ void *AM_FindNextEntry(int scanDesc) {
                   void* recordAttr1 = data+sizeof(char)+3*sizeof(int);
                   while(!keysComparer(recordAttr1,scan->value,GREATER_THAN,file->type1)){
                     int next_record_offset = ScanNextRecord(scan,&block,&data);
-                    if(next_record_offset == NO_NEXT_BLOCK)
+                    if(next_record_offset == NO_NEXT_BLOCK){
+                      AM_errno=AME_EOF;
                       return NULL;  //if there is no next block we end the Scan
+                    }
                     else
                       recordAttr1 = data+next_record_offset;
                   };
@@ -499,8 +515,10 @@ void *AM_FindNextEntry(int scanDesc) {
                   void* recordAttr1;
                   //look at the next record
                   int next_record_offset = ScanNextRecord(scan,&block,&data);
-                  if(next_record_offset == NO_NEXT_BLOCK)
+                  if(next_record_offset == NO_NEXT_BLOCK){
+                    AM_errno=AME_EOF;
                     return NULL;  //if there is no next block we end the Scan
+                  }
                   else
                     recordAttr1 = data+next_record_offset;
                   //next record is deffinetely GREATER_THAN, so lets return it
@@ -523,6 +541,7 @@ void *AM_FindNextEntry(int scanDesc) {
                   //make sure this block is not empty
                   int num_of_records;
                   memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int));
+            PrintLeafBlock(data,scan->fileDesc);
                   while(num_of_records == 0){
                     ScanNextRecord(scan,&block,&data);  //next block
                     memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int)); //update num_of_records
@@ -534,8 +553,10 @@ void *AM_FindNextEntry(int scanDesc) {
                   //is this record LESS_THAN_OR_EQUAL?
                   while(!keysComparer(recordAttr1,scan->value,LESS_THAN_OR_EQUAL,file->type1)){  //if not check the next record until you find one that is LESS_THAN_OR_EQUAL
                     int next_record_offset = ScanNextRecord(scan,&block,&data);
-                    if(next_record_offset == NO_NEXT_BLOCK)
+                    if(next_record_offset == NO_NEXT_BLOCK){
+                      AM_errno=AME_EOF;
                       return NULL;  //end the Scan
+                    }
                     else
                       recordAttr1 = data+next_record_offset;
                   }
@@ -552,11 +573,14 @@ void *AM_FindNextEntry(int scanDesc) {
                   BF_GetBlock(file->bf_desc,scan->block_num,block);
                   char* data = BF_Block_GetData(block);
                   void* recordAttr1;
+  PrintLeafBlock(data,scan->fileDesc);
                   //look at the next record
                   do{
                     int next_record_offset = ScanNextRecord(scan,&block,&data);
-                    if(next_record_offset == NO_NEXT_BLOCK)
+                    if(next_record_offset == NO_NEXT_BLOCK){
+                      AM_errno=AME_EOF;
                       return NULL;  //if there is no next block we end the Scan
+                    }
                     else
                       recordAttr1 = data+next_record_offset;
                   }while(!keysComparer(recordAttr1,scan->value,LESS_THAN_OR_EQUAL,file->type1));  //is this record LESS_THAN_OR_EQUAL? if not check the next record untill you find one that
@@ -582,8 +606,10 @@ void *AM_FindNextEntry(int scanDesc) {
                   void* recordAttr1 = data+sizeof(char)+3*sizeof(int);
                   while(!keysComparer(recordAttr1,scan->return_value,GREATER_THAN_OR_EQUAL,file->type1)){
                     int next_record_offset = ScanNextRecord(scan,&block,&data);
-                    if(next_record_offset == NO_NEXT_BLOCK)
+                    if(next_record_offset == NO_NEXT_BLOCK){
+                      AM_errno=AME_EOF;
                       return NULL;  //end the Scan
+                    }
                     else
                       recordAttr1 = data+next_record_offset;
                   }
@@ -602,8 +628,10 @@ void *AM_FindNextEntry(int scanDesc) {
                   void* recordAttr1;
                   //look at the next record
                   int next_record_offset = ScanNextRecord(scan,&block,&data);
-                  if(next_record_offset == NO_NEXT_BLOCK)
+                  if(next_record_offset == NO_NEXT_BLOCK){
+                    AM_errno=AME_EOF;
                     return NULL;  //if there is no next block we end the Scan
+                  }
                   else
                     recordAttr1 = data+next_record_offset;
                   //next record is deffinetely GREATER_THAN, so lets return it
