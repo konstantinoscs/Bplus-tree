@@ -483,7 +483,7 @@ void *AM_FindNextEntry(int scanDesc) {
   switch(scan->op){
     case EQUAL:
                 if(scan->return_value == NULL){  //first time this Scan is called
-                  scan->return_value = malloc(pr);
+                  scan->return_value = malloc(file->length2);
                   //find the leaf block this key belongs to
                   scan->block_num = findLeaf(scan->fileDesc,scan->value,NULL);
                   BF_Block* block;
