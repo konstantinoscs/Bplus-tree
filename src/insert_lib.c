@@ -9,6 +9,7 @@
 #include "HelperFunctions.h"
 
 extern file_info * openFiles[20];
+int size1;
 
 void print_block(char * data){
   int ptrs = 0;
@@ -18,6 +19,7 @@ void print_block(char * data){
   int nextPtr=0;
   int recordsNum;
   int temp;
+  char * val=malloc(size1);
   memmove(&isleaf, data, sizeof(bool));
   offset+= sizeof(bool);
   memmove(&block_id, data+offset, sizeof(int));
@@ -36,15 +38,16 @@ void print_block(char * data){
   offset+= sizeof(int);
   for(int i=0; i<recordsNum; i++){
     //printf("k%d ", *((int *)data+offset));
-    memmove(&temp, data +offset, sizeof(int));
+    memmove(val, data +offset, size1);
     printf("k%d ", temp);
     offset += sizeof(int);
     //printf("p%d ", *((int *)data+offset));
-    memmove(&temp, data +offset, sizeof(int));
+    memmove(&temp, data+offset, sizeof(int));
     printf("p%d ", temp);
     offset += sizeof(int);
   }
   printf("\n");
+  free(val);
 }
 
 //the declarations I will need, definitions are a the end of this file
@@ -79,7 +82,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
   printf("inserted %d keys\n", ++i);
   printf("Entered index\n");
   printf("key to insert %d\n", *(int *)value);
-  printf("Newbid %d\n", newbid);
+  printf("NEWBID %d\n", newbid);
   BF_Block *curBlock;
   BF_Block_Init(&curBlock);
   //get the number of the bf file we're in
@@ -200,6 +203,7 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
   }
   else{
     printf("Split and pass\n");
+    getchar();
     //split and pass one level up
     BF_Block *newBlock;
     BF_Block_Init(&newBlock);
@@ -248,8 +252,9 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
 //recursively adds a leaf val
 int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
   static int i =0;
-  printf("inserted %d keys\n", ++i);
-  printf("Entered index\n");
+  printf("inserted %d leafs\n", ++i);
+  printf("Entered leaf\n");
+  print_stack(stack);
   //printf("key to insert %d\n", *(int *)value);
   BF_Block *curBlock;
   BF_Block_Init(&curBlock);
@@ -257,7 +262,6 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
   int bf_no = openFiles[fileDesc]->bf_desc;
   //get current block number from stack
   int block_no = get_top(stack);
-  printf("BLock_no %d\n", block_no);
   //open block and get its data
   BF_GetBlock(bf_no, block_no, curBlock);
   char * data = BF_Block_GetData(curBlock);
@@ -295,10 +299,11 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     //unpin and destroy block here to save stack memory
     BF_UnpinBlock(curBlock);
     BF_Block_Destroy(&curBlock);
+    printf("At block %d and decending to block %d\n", block_no, block_id);
     stack_push(stack, block_id);
     return insert_leaf_val(value1, value2, fileDesc, stack);
   }
-
+  printf("Leaf BLock_no %d\n", block_no);
   int size2 = openFiles[fileDesc]->length2;
   int total_size = offset + records*(size1+size2);
   printf("Records are %d\nTotalsize is %d\n", records, total_size);
@@ -306,7 +311,7 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
 
   if(leaf_block_has_space(records, size1, size2)){
     offset = findOffsetInLeaf(data, value1, fileDesc);
-    printf("Offset is %d\n", offset);
+    printf("Leaf Offset is %d\n", offset);
     //move existing data to the right and insert new data
     memmove(data+offset+size1+size2, data+offset, total_size-offset);
     memmove(data+offset, value1, size1);
@@ -317,6 +322,8 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     offset = sizeof(bool) + 2*sizeof(int);
     records++;
     memmove(data+offset, &records, sizeof(int));
+    //BF_Block_SetDirty(curBlock);
+    printf("Records after insert are %d\n", records);
   }
   else{
     printf("Split and insert\n");
@@ -331,6 +338,7 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     offset = sizeof(bool)+sizeof(int);
     int nextPtr;
     memmove(&nextPtr, data+offset, sizeof(int));
+    memmove(data+offset, &new_id, sizeof(int));
     //initialize leaf block
     blockMetadataInit(new_data, 1, new_id, nextPtr, 0);
 
@@ -564,7 +572,7 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
   int roffset=sizeof(bool)+3*sizeof(int);
   int loffset=sizeof(bool)+3*sizeof(int);
   int recs_for_2 = 0;
-  int left_limit = loffset + (total_records-1)*(size1+size1);
+  int left_limit = loffset + (total_records-1)*(size1+size2);
 
   //pass everything LESS_THAN mid_value
   while(keysComparer(ldata+loffset,mid_value,LESS_THAN,type1)){
@@ -582,8 +590,10 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
     inNewBlock = false;
   }
   else if(keysComparer(value1, mid_value, EQUAL, type1)){  //if to the new but the value1=mid_value
-    memmove(rdata+roffset,value1,size1+size2);  //insert mid_value as the 1st record of new block
-    roffset += size1+size2;
+    memmove(rdata+roffset,value1,size1);  //insert mid_value as the 1st record of new block
+    roffset += size1;
+    memmove(rdata+roffset, value2, size2);
+    roffset += size2;
     recs_for_2--;
   }
   // else if(keysComparer(value1,ldata+loffset,EQUAL,type1) && !value1_is_set){
@@ -593,12 +603,28 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
   //   roffset += size2;
   //   value1_is_set = true;
   // }
-
+  printf("once in partition\n");
   bool value1_is_set = false;
   for(int i=0; i<recs_for_2; i++){
     //check if this is where the value1 will go
-    if(loffset>=left_limit || (keysComparer(value1,mid_value,GREATER_THAN,type1) && keysComparer(value1,ldata+loffset,LESS_THAN,type1))
-    || (keysComparer(value1,ldata+loffset,EQUAL,type1) && !value1_is_set)){
+    if(loffset>=left_limit){
+      printf("copying the key here\n");
+      memmove(rdata+roffset, value1, size1);
+      roffset += size1;
+      memmove(rdata+roffset, value2, size2);
+      roffset += size2;
+      value1_is_set = true;
+    }
+    else if((keysComparer(value1,ldata+loffset,EQUAL,type1) && !value1_is_set)){
+      printf("copying the key here2\n");
+      memmove(rdata+roffset, value1, size1);
+      roffset += size1;
+      memmove(rdata+roffset, value2, size2);
+      roffset += size2;
+      value1_is_set = true;
+    }
+    else if(keysComparer(value1,mid_value,GREATER_THAN,type1) && keysComparer(value1,ldata+loffset,LESS_THAN,type1)&& !value1_is_set){
+      printf("copying the key here3\n");
       memmove(rdata+roffset, value1, size1);
       roffset += size1;
       memmove(rdata+roffset, value2, size2);

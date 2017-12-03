@@ -5,7 +5,7 @@
 #include "defn.h"
 #include "AM.h"
 
-#define NUM_OF_INSERTS 100
+#define NUM_OF_INSERTS 500
 
 void main(void){
   AM_Init();
