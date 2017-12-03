@@ -399,3 +399,38 @@ void print_leaf(char * data){
   printf("Nexptr %d\n", nextPtr);
   printf("recordsNum %d", recordsNum);
 }
+
+void PrintTree(int fileDesc){
+  BF_Block *block;
+  BF_Block_Init(&block);
+  BF_GetBlock(openFiles[fileDesc]->bf_desc, 0, block);
+  char* data = BF_Block_GetData(block);
+
+  PrintBlockMetadata(data);
+
+  if(!BlockIsLeaf(data)){
+    PrintIndexBlock(data);
+  }
+  else{
+
+  }
+}
+
+void PrintBlockMetadata(char* data){
+  int isLeaf,blockId,nextPtr,recordsNum;
+  memmove(&isLeaf,data,sizeof(bool));
+  memmove(&blockId,data+sizeof(bool),sizeof(int));
+  memmove(&nextPtr,data+sizeof(bool)+sizeof(int),sizeof(int));
+  memmove(&recordsNum,data+sizeof(bool)+2*sizeof(int),sizeof(int));
+  printf("%c.%d.%d.%d|||", isLeaf,blockId,nextPtr,recordsNum);
+}
+
+int BlockIsLeaf(char* data){
+  int isLeaf;
+  memmove(&isLeaf,data,sizeof(bool));
+  return isLeaf;
+}
+
+void PrintIndexBlock(char* data){
+
+}

@@ -46,7 +46,7 @@ int ScanNextRecord(Scan* scan, BF_Block** block_ptr,char** data_ptr){
 	memcpy(&num_of_records,(*data_ptr)+sizeof(char)+2*sizeof(int),sizeof(int));
 	//is the next record in this or the next block?
 	if(scan->record_num >= num_of_records){  //if its in the next block
-printf("ScanNextRecord changing block at record_num:%d\n", scan->record_num);
+printf("ScanNextRecord changing block at record_num%d>=%d\n", scan->record_num,num_of_records);
 		int next_block_num;
 		memcpy(&next_block_num,(*data_ptr)+sizeof(char)+sizeof(int),sizeof(int));
 		if(next_block_num == -1){  //if there is no next block, end Scan
@@ -66,6 +66,7 @@ printf("ScanNextRecord changing block at record_num:%d\n", scan->record_num);
 		BF_GetBlock(file->bf_desc,next_block_num,*block_ptr);
 		*data_ptr = BF_Block_GetData(*block_ptr);
 		//update scan counters
+printf("old block:%d newblock:%d\n", scan->block_num,next_block_num);
 		scan->block_num = next_block_num;
 		scan->record_num = 0;
 		return sizeof(char)+3*sizeof(int);	//return the offset of the first record of the next block
