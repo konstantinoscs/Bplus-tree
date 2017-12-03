@@ -539,7 +539,8 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
   int left_limit = loffset + (total_records-1)*(size1+size2);
   //pass everything LESS_THAN mid_value
   while(keysComparer(ldata+loffset,mid_value,LESS_THAN,type1)){
-    loffset += size1+size2;
+    loffset += size1;
+    loffset += size2;
     recs_in1st++;
   }
   int recs_in2nd = total_records-recs_in1st;
@@ -561,13 +562,9 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
     recs_for_2--;
     value1_is_set= true;
   }
-  // else if(keysComparer(value1,ldata+loffset,EQUAL,type1) && !value1_is_set){
-  //   memmove(rdata+roffset, value1, size1);
-  //   roffset += size1;
-  //   memmove(rdata+roffset, value2, size2);
-  //   roffset += size2;
-  //   value1_is_set = true;
-  // }
+
+  //copy the values to the right block carefully watching where the new
+  //value should be put
   for(int i=0; i<recs_for_2; i++){
     //check if this is where the value1 will go
     if(loffset>=left_limit){
@@ -604,7 +601,7 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
   if(!value1_is_set){ //check if value1 goes to the old block
     loffset = sizeof(bool)+3*sizeof(int);
     for(int i=0; i<recs_in1st; i++){
-      if(keysComparer(value1,ldata+loffset,LESS_THAN,type1)){ //this is where value1 will go
+      if(keysComparer(value1,ldata+loffset,LESS_THAN,type1) ){ //this is where value1 will go
         //move the data from here to the right to make space for value1
         int newspace = size1+size2;
         int recs_left_in1st = recs_in1st-1-i;
@@ -614,6 +611,7 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
         loffset += size1;
         memmove(ldata+loffset,value2,size2);
         loffset += size2;
+        break;
       }
       else{ //value1 isnt going here, lets look at the next record
         loffset += size1+size2;
