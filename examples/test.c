@@ -5,7 +5,7 @@
 #include "defn.h"
 #include "AM.h"
 
-#define NUM_OF_INSERTS 10
+#define NUM_OF_INSERTS 1000
 
 void main(void){
   AM_Init();
@@ -22,8 +22,9 @@ void main(void){
     */
     AM_InsertEntry(fd,(void*) &i, (void*) &i);
   }
+  printf("PAO GIA SCAN\n");
   //SCAN
-  int value1=1;
+  int value1=50;
   int scanDesc = AM_OpenIndexScan(fd, EQUAL, &value1);
   int* value2 = AM_FindNextEntry(scanDesc);
   printf("%d\n", *value2);

@@ -319,6 +319,7 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     memmove(data+offset, &records, sizeof(int));
   }
   else{
+    printf("Split and insert\n");
     //split block and insert record
     BF_Block *newBlock;
     BF_Block_Init(&newBlock);
@@ -337,7 +338,7 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     int recs_in1st = records +1 - recs_in2nd;
     char * mid_value = malloc(size1);
     find_middle_record(data, mid_value, value1, type1, size1, size2, recs_in1st);
-
+/////////////////////////////////////////////////////////////////////////////////////////////
     //partition with caution for same values
     leaf_partition(data, new_data, mid_value, type1, size1, size2, records+1,
       value1, value2);
@@ -562,6 +563,8 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
   int recs_in1st =0;
   int roffset=sizeof(bool)+3*sizeof(int);
   int loffset=sizeof(bool)+3*sizeof(int);
+  int recs_for_2 = 0;
+  int left_limit = loffset + (total_records-1)*(size1+size1);
 
   //pass everything LESS_THAN mid_value
   while(keysComparer(ldata+loffset,mid_value,LESS_THAN,type1)){
@@ -569,30 +572,41 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
     recs_in1st++;
   }
   int recs_in2nd = total_records-recs_in1st;
+  recs_for_2 = recs_in2nd;
   //is the value1 going to the old or the new block?
   bool inNewBlock = true;
-  if(keysComparer(value1,mid_value,LESS_THAN,type1)){ //if to the old
+  if(keysComparer(value1, mid_value, LESS_THAN, type1)){ //if to the old
     recs_in2nd--;
+    recs_for_2--;
     recs_in1st++;
     inNewBlock = false;
   }
-  else if(keysComparer(value1,mid_value,EQUAL,type1)){  //if to the new but the value1=mid_value
+  else if(keysComparer(value1, mid_value, EQUAL, type1)){  //if to the new but the value1=mid_value
     memmove(rdata+roffset,value1,size1+size2);  //insert mid_value as the 1st record of new block
     roffset += size1+size2;
+    recs_for_2--;
   }
+  // else if(keysComparer(value1,ldata+loffset,EQUAL,type1) && !value1_is_set){
+  //   memmove(rdata+roffset, value1, size1);
+  //   roffset += size1;
+  //   memmove(rdata+roffset, value2, size2);
+  //   roffset += size2;
+  //   value1_is_set = true;
+  // }
 
   bool value1_is_set = false;
-  for(int i=0; i<recs_in2nd; i++){
+  for(int i=0; i<recs_for_2; i++){
     //check if this is where the value1 will go
-    if(keysComparer(value1,mid_value,GREATER_THAN,type1) && keysComparer(value1,ldata+loffset,LESS_THAN,type1)){
-      memmove(rdata+roffset,value1,size1);
+    if(loffset>=left_limit || (keysComparer(value1,mid_value,GREATER_THAN,type1) && keysComparer(value1,ldata+loffset,LESS_THAN,type1))
+    || (keysComparer(value1,ldata+loffset,EQUAL,type1) && !value1_is_set)){
+      memmove(rdata+roffset, value1, size1);
       roffset += size1;
-      memmove(rdata+roffset,value2,size2);
+      memmove(rdata+roffset, value2, size2);
       roffset += size2;
       value1_is_set = true;
     }
     else{ //else value1 is not here, but an old record is
-      memmove(rdata+roffset,ldata+loffset,size1);
+      memmove(rdata+roffset, ldata+loffset,size1);
       loffset += size1;
       roffset += size1;
       memmove(rdata+roffset,ldata+loffset,size2);
