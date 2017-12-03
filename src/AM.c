@@ -146,8 +146,6 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   //remove the file from openFiles array
   close_file(file_index);
 
-  printf("CREATEINDEX len1: %d len2: %d\n", len1, len2 );
-
   return AME_OK;
 }
 
@@ -189,7 +187,6 @@ int AM_OpenIndex (char *fileName) {
   memmove(&rootId, data, sizeof(int));
   data += sizeof(int);
   memmove(&rootInitialized, data, sizeof(int));
-printf("OPENINDEX len1: %d len2: %d\n", len1, len2 );
   CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
   BF_Block_Destroy(&tmpBlock);
 
@@ -224,7 +221,6 @@ int AM_CloseIndex (int fileDesc) {
 }
 
 int AM_InsertEntry(int fileDesc, void *value1, void *value2) {
-printf("-----------INSERTING-----------\n");
   BF_Block *tmpBlock;
   BF_Block_Init(&tmpBlock);
   void * rootData = NULL;
@@ -272,11 +268,9 @@ printf("-----------INSERTING-----------\n");
   Stack *nodesPath;
   create_stack(&nodesPath);
   stack_push(nodesPath,rootId);
-  printf("prin insert leaf\n");
   //insert the new record in a leaf block
   insert_leaf_val(value1,value2,fileDesc,nodesPath);
   //clean up
-  printf("meta insert leaf\n");
   destroy_stack(nodesPath);
   return AME_OK;
 }
@@ -489,7 +483,7 @@ void *AM_FindNextEntry(int scanDesc) {
   switch(scan->op){
     case EQUAL:
                 if(scan->return_value == NULL){  //first time this Scan is called
-                  scan->return_value = malloc(file->length2);
+                  scan->return_value = malloc(pr);
                   //find the leaf block this key belongs to
                   scan->block_num = findLeaf(scan->fileDesc,scan->value,NULL);
                   BF_Block* block;
