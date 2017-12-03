@@ -46,6 +46,7 @@ file_info * openFiles[20];
 //and returns if the operation is true or false
 //is targetkey op tmpkey?
 bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType);
+bool keysComparerr(void *targetKey, void *tmpKey, int operation, int keyType,int);
 
 //Returning the stack full with the path to the leaf and the id of the leaf
 //that has the key we are looking for or should have it at least. If called with null leafPath we didnt need

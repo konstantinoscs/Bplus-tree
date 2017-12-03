@@ -10,7 +10,6 @@
 #include "insert_lib.h"
 
 int AM_errno = AME_OK;
-extern int size1;
 
 void AM_Init() {
   BF_Init(MRU);
@@ -31,7 +30,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   {
     return AME_WRONGARGS;
   }
-  size1 = len1;
+
   /*attrMeta.type1 = type1;
   attrMeta.len1 = len1;
   attrMeta.type2 = type2;
@@ -501,12 +500,9 @@ void *AM_FindNextEntry(int scanDesc) {
           PrintLeafBlock(data, scan->fileDesc);
                   //find the first record with scan->value in this block
                   scan->record_num = 0;
-                  //void* recordAttr1 = data+sizeof(char)+3*sizeof(int);
-                  char* recordAttr1 = malloc(file->length1);
-                  memmove(recordAttr1,data+sizeof(bool)+3*sizeof(int),file->length1);
+                  void* recordAttr1 = data+sizeof(char)+3*sizeof(int);
                   //is this record equal?
                   while(!keysComparer(recordAttr1,scan->value,EQUAL,file->type1)){
-                    printf("%s\n", (char*)recordAttr1);
                     int next_record_offset = ScanNextRecord(scan,&block,&data);
                     if(next_record_offset == NO_NEXT_BLOCK)
                       return NULL;  //end the Scan
