@@ -8,6 +8,11 @@
 //and returns if the operation is true or false
 //is targetkey op tmpkey?
 bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType){
+  int len = strlen((char*)tmpKey);
+  char* str = malloc(len+1);
+  memmove(str,targetKey,len);
+  str += '\0';
+
   switch (operation){
     case EQUAL:
       switch (keyType){
@@ -20,11 +25,14 @@ bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType){
             return 1;
           return 0;
         case 3:
-          if (!strcmp((char *)targetKey, (char *)tmpKey)) //When comparing strings we dont need to know their length
+        printf("Comparing %s vs %s\n", (char*)targetKey,(char*)tmpKey);
+          if (!strncmp((char *)targetKey, (char *)tmpKey, len)) //When comparing strings we dont need to know their length
                                                           //because strcmp stops to the null term char
           {
+            printf("SAME\n");
             return 1;
           }
+          printf("NOT SAME\n");
           return 0;
       }
     case NOT_EQUAL:
@@ -103,6 +111,7 @@ bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType){
           return 0;
       }
   }
+  free(str);
 }
 
 //Returning the stack full with the path to the leaf and the id of the leaf
@@ -445,6 +454,7 @@ void PrintLeafBlock(char* data, int fd){
     PrintAttr(data+offset,type1,len1);
     printf("-");
     PrintAttr(data+offset+len1,type2,len2);
+    printf("-");
     offset += len1+len2;
   }
 }
@@ -487,12 +497,21 @@ void PrintIndexBlock(char *data, int fileDesc){/*
 
 
 void PrintAttr(char* data, int type, int len){
-/*  switch(type1){
+  int i;
+  float f;
+  char* str = malloc(len);
+  switch(type){
     case 1: //int
-      printf("%d", *data);
+      memmove(&i,data,sizeof(int));
+      printf("%d", i);
       break;
     case 2: //float
+      memmove(&f,data,sizeof(float));
+      printf("%f", f);
       break;
     case 3: //string
+      memmove(str,data,len);
+      printf("%s", str);
   }
-*/}
+  free(str);
+}
