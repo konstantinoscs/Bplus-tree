@@ -46,7 +46,6 @@ file_info * openFiles[20];
 //and returns if the operation is true or false
 //is targetkey op tmpkey?
 bool keysComparer(void *targetKey, void *tmpKey, int operation, int keyType);
-bool keysComparerr(void *targetKey, void *tmpKey, int operation, int keyType,int);
 
 //Returning the stack full with the path to the leaf and the id of the leaf
 //that has the key we are looking for or should have it at least. If called with null leafPath we didnt need
@@ -59,10 +58,6 @@ int findMostLeftLeaf(int fd);
 //findRecord finds the position [0-n) of the record that has attr1 as value1 if it exists, otherwise the position it would be
 int findRecordPos(void * data, int fd, void * value1);
 
-//RecordIndex->the index the new record should go [0-n), fd our openFiles descriptor, currRecords the amount of existing records in this block
-//value1,2 tha values to be inserted in the block
-void simpleInsertToLeaf(int recordIndex, int fd, void *data, int currRecords, void *value1, void *value2);
-
 /***************************************************************************************************************************
 **************CREATE*********************************************************************************************************
 ******************************************************************************************************************************/
@@ -72,11 +67,7 @@ int typeChecker(char attrType, int attrLength, int *type, int *len);
 //Initializing a new blocks metadata
 void blockMetadataInit(void *data, bool isLeaf, int blockId, int nextPtr, int recordsNum);
 
-//Returning how many keys are equal to the target key
-int sameKeysCount(void *data, void *targetkey, int length, int type, int currRecords);
-
-
-
+//prints
 void PrintTree(int fileDesc);
 
 void PrintBlockMetadata(char* data);

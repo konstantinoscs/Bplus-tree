@@ -10,6 +10,9 @@ extern int AM_errno;
 #define AME_WRONGARGS -2
 #define AME_MAXFILES -3
 #define AME_RECORD_NOT_FOUND -4 //while scanning the record you asked for was not found by its key
+#define HAS_OPEN_SCAN -5  //if the file you are tryint to close has an openScan in openScans (even if the scan is over)
+#define NO_NEXT_BLOCK -6  //while scanning if there is no more blocks to scan
+
 
 #define EQUAL 1
 #define NOT_EQUAL 2
@@ -23,6 +26,7 @@ extern int AM_errno;
 #include "defn.h"
 #include "BoolType.h"
 
+/*
 typedef struct BlockMetadata
 {
   bool isLeaf; //0 if its an inside node 1 if it is leaf (sizeof(char))
@@ -31,9 +35,9 @@ typedef struct BlockMetadata
   int recordsNum; // The amount of current records, either its keys or data
 } BlockMetadata;
 
-/*typedef struct firstBlock
+typedef struct firstBlock
 {
-  DIBLU$
+  char anagnwristiko[15];   //DIBLU$
   int type1; //Type of the first(key) attribute. 1 for int 2 for float 3 for string
   int len1; //Length of the first attribute
   int type2; //Type of the second attribute. 1 for int 2 for float 3 for string

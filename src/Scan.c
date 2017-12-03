@@ -1,5 +1,7 @@
 #include "Scan.h"
 
+#define NO_NEXT_BLOCK -6  //while scanning if there is no more blocks to scan
+
 int openScansInsert(Scan* scan){
 	int pos = openScansFindEmptySlot();
   if(openScansFull() != true)
@@ -22,6 +24,18 @@ int openScansFindEmptySlot(){
 bool openScansFull(){
 	if(openScansFindEmptySlot() == MAX_SCANS) //if you cant find empty slot in [0-19] then its full
 		return true;
+	return false;
+}
+
+//gets fd for openFiles and checks if this file has an open Scan
+bool hasOpenScan(int fd){
+	for(int i=0; i<MAX_SCANS; i++){
+		Scan* scan = openScans[i];
+		if(scan != NULL){
+			if(scan->fileDesc == fd)
+				return true;
+		}
+	}
 	return false;
 }
 

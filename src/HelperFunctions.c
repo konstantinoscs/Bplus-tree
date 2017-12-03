@@ -264,24 +264,6 @@ int findRecordPos(void * data, int fd, void * value1){
   return curr_record;
 }
 
-//RecordIndex->the index the new record should go [0-n), fd our openFiles descriptor, currRecords the amount of existing records in this block
-//value1,2 the values to be inserted in the block
-void simpleInsertToLeaf(int recordIndex, int fd, void* data, int currRecords, void *value1, void *value2){
-  int offset, len1, len2;
-  len1 = openFiles[fd]->length1;
-  len2 = openFiles[fd]->length2;
-
-  offset = (sizeof(char) + sizeof(int)*3 + recordIndex*(len1 + len2));  //Get the offset to that position
-  //Move all the records after that position right by recordSize (len1 + len 2)
-  memmove(data + offset + len1 + len2, data + offset, (currRecords - recordIndex)*(len1 + len2));
-  memmove(data + offset, value1, len1);  //Write to the space we made the new record
-  offset += len1;
-  memmove(data + offset, value2, len2);
-  currRecords++;
-  offset = (sizeof(char) + sizeof(int)*2);
-  memmove(data + offset, &currRecords, sizeof(int)); //Write the new current number of records to the block
-}
-
 /************************************************
 **************Create*******************************
 *************************************************/
@@ -331,24 +313,6 @@ void blockMetadataInit(void *data, bool isLeaf, int blockId, int nextPtr, int re
   //int recordsNum
   data += sizeof(int);
   memmove(data, &recordsNum, sizeof(int));
-}
-
-//Returning how many keys are equal to the target key
-int sameKeysCount(void *data, void *targetKey, int length, int type, int currRecords){
-  int sameKeysCounter = 0;
-  int offset;
-  void *tmpKey = NULL;
-  int currIndex = 0;
-  offset = sizeof(char) + sizeof(int)*3;
-  memmove(tmpKey, data + offset, length);
-  while(currIndex < currRecords){
-    if (keysComparer(targetKey, tmpKey, EQUAL, type))
-    {
-      sameKeysCounter++;
-    }
-    currIndex++;
-  }
-  return sameKeysCounter;
 }
 
 void print_metadata(char* data){
