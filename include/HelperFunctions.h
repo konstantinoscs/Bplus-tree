@@ -75,4 +75,13 @@ void blockMetadataInit(void *data, bool isLeaf, int blockId, int nextPtr, int re
 int sameKeysCount(void *data, void *targetkey, int length, int type, int currRecords);
 
 
+
+void PrintTree(int fileDesc);
+
+void PrintBlockMetadata(char* data);
+
+void PrintIndexBlock(char* data);
+
+int BlockIsLeaf(char * data);
+
 #endif
