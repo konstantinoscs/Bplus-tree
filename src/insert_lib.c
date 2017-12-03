@@ -252,7 +252,6 @@ int insert_index_val(void *value, int fileDesc, Stack* stack, int newbid){
 //recursively adds a leaf val
 int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
   static int i =0;
-  printf("inserted %d leafs\n", ++i);
   printf("Entered leaf\n");
   //print_stack(stack);
   //printf("key to insert %d\n", *(int *)value);
@@ -303,6 +302,7 @@ int insert_leaf_val(void * value1, void* value2, int fileDesc, Stack * stack){
     stack_push(stack, block_id);
     return insert_leaf_val(value1, value2, fileDesc, stack);
   }
+  printf("inserted %d leafs\n", ++i);
   printf("Leaf BLock_no %d\n", block_no);
   int size2 = openFiles[fileDesc]->length2;
   int total_size = offset + records*(size1+size2);
@@ -518,7 +518,7 @@ bool leaf_block_has_space(int num_of_records, int len1, int len2){
 int findOffsetInLeaf(char* data, void *value, int fd){
   file_info* file = openFiles[fd];
   int num_of_records;
-  memcpy(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int));
+  memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int));
   //start from the record 0 of this block
   int offset = sizeof(bool)+3*sizeof(int);
   int curr_record = 0;
