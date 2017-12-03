@@ -9,29 +9,31 @@
 
 void main(void){
   AM_Init();
-  AM_CreateIndex("TestBase", INTEGER, 4, INTEGER, sizeof(int));
+  AM_CreateIndex("TestBase", INTEGER, 4, STRING, 10);
   int fd = AM_OpenIndex("TestBase");
+  float iff = 0.0;
 
   //INSERT
   for(int i=0; i<NUM_OF_INSERTS; i++){
-    /*string
+    //string
     char str[5];
     sprintf(str, "%d", i);
     printf("(((%s)))", str);
 
-    */
-    AM_InsertEntry(fd,(void*) &i, (void*) &i);
+
+    // iff = (float)i/10;
+     AM_InsertEntry(fd,(void*) &i, (void*) &iff);
   }
   printf("PAO GIA SCAN\n");
   //SCAN
-  int value1=50;
-  int scanDesc = AM_OpenIndexScan(fd, LESS_THAN, &value1);
+  char value1[5] = {'5', '0'};
+  int scanDesc = AM_OpenIndexScan(fd, EQUAL, &value1);
   for(int i=0; i<NUM_OF_INSERTS; i++){
-    int* value2 = AM_FindNextEntry(scanDesc);
+    char* value2 = AM_FindNextEntry(scanDesc);
     if( value2 == NULL)
       printf("%d.NULL\n", i);
     else
-      printf("%d\n", *value2);
+      printf("%s\n", value2);
   }
 
   AM_CloseIndex(fd);
