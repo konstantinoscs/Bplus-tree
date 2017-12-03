@@ -151,6 +151,32 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
 
 
 int AM_DestroyIndex(char *fileName) {
+  BF_Block *tmpBlock;
+  BF_Block_Init(&tmpBlock);
+
+  int type1,type2,len1,len2, fileDesc, rootId, rootInitialized;
+  char *data = NULL;
+
+
+  CALL_OR_DIE(BF_OpenFile(fileName, &fileDesc));
+
+  CALL_OR_DIE(BF_GetBlock(fileDesc, 0, tmpBlock));//Getting the first block
+  data = BF_Block_GetData(tmpBlock);//and its data
+
+  if (data == NULL || strcmp(data, "DIBLU$"))//to check if this new opened file is a B+ tree file
+  {
+    CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+    BF_Block_Destroy(&tmpBlock);
+    CALL_OR_DIE(BF_CloseFile(fileDesc));
+    printf("File: %s to destroy is not a B+ tree file. Exiting..\n", fileName);
+    exit(-1);
+  }
+
+  CALL_OR_DIE(BF_UnpinBlock(tmpBlock));
+  BF_Block_Destroy(&tmpBlock);
+  CALL_OR_DIE(BF_CloseFile(fileDesc));
+
+  remove(fileName);
   return AME_OK;
 }
 
