@@ -518,6 +518,7 @@ int find_middle_record(char * data, char * mid_value1, void * value1, int type1,
 
     //if middle value is equal to first find the next bigger
     if(keysComparer(data+offset, mid_value1, EQUAL, type1)){
+      printf("Special case\n");
       while(keysComparer(data+offset, mid_value1, LESS_THAN_OR_EQUAL, type1)){
         offset += size1 + size2;
 
@@ -536,7 +537,6 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
   int loffset=sizeof(bool)+3*sizeof(int);
   int recs_for_2 = 0;
   int left_limit = loffset + (total_records-1)*(size1+size2);
-
   //pass everything LESS_THAN mid_value
   while(keysComparer(ldata+loffset,mid_value,LESS_THAN,type1)){
     loffset += size1+size2;
@@ -544,6 +544,7 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
   }
   int recs_in2nd = total_records-recs_in1st;
   recs_for_2 = recs_in2nd;
+  bool value1_is_set = false;
   //is the value1 going to the old or the new block?
   bool inNewBlock = true;
   if(keysComparer(value1, mid_value, LESS_THAN, type1)){ //if to the old
@@ -558,6 +559,7 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
     memmove(rdata+roffset, value2, size2);
     roffset += size2;
     recs_for_2--;
+    value1_is_set= true;
   }
   // else if(keysComparer(value1,ldata+loffset,EQUAL,type1) && !value1_is_set){
   //   memmove(rdata+roffset, value1, size1);
@@ -566,7 +568,6 @@ int leaf_partition(char * ldata, char * rdata, void *mid_value, int type1,
   //   roffset += size2;
   //   value1_is_set = true;
   // }
-  bool value1_is_set = false;
   for(int i=0; i<recs_for_2; i++){
     //check if this is where the value1 will go
     if(loffset>=left_limit){
