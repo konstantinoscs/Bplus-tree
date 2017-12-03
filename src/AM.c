@@ -10,6 +10,7 @@
 #include "insert_lib.h"
 
 int AM_errno = AME_OK;
+extern int size1;
 
 void AM_Init() {
   BF_Init(MRU);
@@ -30,7 +31,7 @@ int AM_CreateIndex(char *fileName, char attrType1, int attrLength1, char attrTyp
   {
     return AME_WRONGARGS;
   }
-
+  size1 = len1;
   /*attrMeta.type1 = type1;
   attrMeta.len1 = len1;
   attrMeta.type2 = type2;
