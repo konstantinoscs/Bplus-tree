@@ -449,6 +449,7 @@ void PrintLeafBlock(char* data, int fd){
     printf("-");
     offset += len1+len2;
   }
+  printf("\n");
 }
 
 void PrintIndexBlock(char *data, int fileDesc){/*

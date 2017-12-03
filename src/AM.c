@@ -541,6 +541,7 @@ void *AM_FindNextEntry(int scanDesc) {
                   //make sure this block is not empty
                   int num_of_records;
                   memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int));
+            PrintLeafBlock(data,scan->fileDesc);
                   while(num_of_records == 0){
                     ScanNextRecord(scan,&block,&data);  //next block
                     memmove(&num_of_records,data+sizeof(bool)+2*sizeof(int),sizeof(int)); //update num_of_records
@@ -572,6 +573,7 @@ void *AM_FindNextEntry(int scanDesc) {
                   BF_GetBlock(file->bf_desc,scan->block_num,block);
                   char* data = BF_Block_GetData(block);
                   void* recordAttr1;
+  PrintLeafBlock(data,scan->fileDesc);
                   //look at the next record
                   do{
                     int next_record_offset = ScanNextRecord(scan,&block,&data);
