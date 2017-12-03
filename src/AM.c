@@ -489,7 +489,7 @@ void *AM_FindNextEntry(int scanDesc) {
   switch(scan->op){
     case EQUAL:
                 if(scan->return_value == NULL){  //first time this Scan is called
-                  scan->return_value = malloc(sizeof(file->length2));
+                  scan->return_value = malloc(file->length2);
                   //find the leaf block this key belongs to
                   scan->block_num = findLeaf(scan->fileDesc,scan->value,NULL);
                   BF_Block* block;
@@ -510,7 +510,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }
                   //now we've got a record that is EQUAL, so lets return it
-                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1, file->length2);
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -531,7 +531,7 @@ void *AM_FindNextEntry(int scanDesc) {
                     recordAttr1 = data+next_record_offset;
                   //is the next record is equal as well?
                   if(keysComparer(recordAttr1, scan->value, EQUAL, file->type1)){  //if it is equal
-                    memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                    memmove(scan->return_value,recordAttr1+file->length1, file->length2);
                     //clear block
                     BF_UnpinBlock(block);
                     BF_Block_Destroy(&block);
@@ -550,7 +550,7 @@ void *AM_FindNextEntry(int scanDesc) {
                 break;
     case NOT_EQUAL:
                 if(scan->return_value == NULL){  //first time this Scan is called
-                  scan->return_value = malloc(sizeof(file->length2));
+                  scan->return_value = malloc(file->length2);
                   //find the left most block
                   scan->block_num = findMostLeftLeaf(scan->fileDesc);
                   BF_Block* block;
@@ -577,7 +577,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }
                   //now we've got a record that is not_equal, so lets return it
-                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1, file->length2);
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -599,7 +599,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }while(!keysComparer(recordAttr1,scan->value,NOT_EQUAL,file->type1));  //is this record not_equal? if not check the next record untill you find one that is not_equal
                   //now we've got a record that is not_equal, so lets return it
-                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1, file->length2);
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -607,7 +607,7 @@ void *AM_FindNextEntry(int scanDesc) {
                 }
     case LESS_THAN:
                 if(scan->return_value == NULL){ //fist time this scan is called
-                  scan->return_value = malloc(sizeof(file->length2));
+                  scan->return_value = malloc(file->length2);
                   //find the left most block
                   scan->block_num = findMostLeftLeaf(scan->fileDesc);
                   BF_Block* block;
@@ -634,7 +634,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }
                   //now we've got a record that is less_than, so lets return it
-                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1, file->length2);
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -655,7 +655,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }while(!keysComparer(recordAttr1,scan->value,LESS_THAN,file->type1));  //is this record less_than? if not check the next record untill you find one that is less_than
                   //now we've got a record that is less_than, so lets return it
-                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1, file->length2);
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -663,7 +663,7 @@ void *AM_FindNextEntry(int scanDesc) {
                 }
     case GREATER_THAN:
                 if(scan->return_value == NULL){ //first time this scan is called
-                  scan->return_value = malloc(sizeof(file->length2));
+                  scan->return_value = malloc(file->length2);
                   //find the leaf block this key belongs to
                   scan->block_num = findLeaf(scan->fileDesc,scan->value,NULL);
                   scan->record_num = 0;
@@ -682,7 +682,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   };
                   //now we've got a GREATER_THAN record, so lets return it
-                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,file->length2);
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -701,7 +701,7 @@ void *AM_FindNextEntry(int scanDesc) {
                   else
                     recordAttr1 = data+next_record_offset;
                   //next record is deffinetely GREATER_THAN, so lets return it
-                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,file->length2);
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -709,7 +709,7 @@ void *AM_FindNextEntry(int scanDesc) {
                 }
     case LESS_THAN_OR_EQUAL:
                 if(scan->return_value == NULL){ //fist time this scan is called
-                  scan->return_value = malloc(sizeof(file->length2));
+                  scan->return_value = malloc(file->length2);
                   //find the left most block
                   scan->block_num = findMostLeftLeaf(scan->fileDesc);
                   BF_Block* block;
@@ -737,7 +737,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }
                   //now we've got a record that is LESS_THAN_OR_EQUAL, so lets return it
-                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,file->length2);
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -758,7 +758,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }while(!keysComparer(recordAttr1,scan->value,LESS_THAN_OR_EQUAL,file->type1));  //is this record LESS_THAN_OR_EQUAL? if not check the next record untill you find one that
                   //now we've got a record that is LESS_THAN_OR_EQUAL, so lets return it
-                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,file->length2);
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -766,7 +766,7 @@ void *AM_FindNextEntry(int scanDesc) {
                 }
     case GREATER_THAN_OR_EQUAL:
                 if(scan->return_value == NULL){ //first time this scan is called
-                  scan->return_value = malloc(sizeof(file->length2));
+                  scan->return_value = malloc(file->length2);
                   //find the leaf block this key belongs to
                   scan->block_num = findLeaf(scan->fileDesc,scan->value,NULL);
                   scan->record_num = 0;
@@ -785,7 +785,7 @@ void *AM_FindNextEntry(int scanDesc) {
                       recordAttr1 = data+next_record_offset;
                   }
                   //now we've got a record that is GREATER_THAN_OR_EQUAL, so lets return it
-                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,file->length2);
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
@@ -804,7 +804,7 @@ void *AM_FindNextEntry(int scanDesc) {
                   else
                     recordAttr1 = data+next_record_offset;
                   //next record is deffinetely GREATER_THAN, so lets return it
-                  memmove(scan->return_value,recordAttr1+file->length1,sizeof(file->length2));
+                  memmove(scan->return_value,recordAttr1+file->length1,file->length2);
                   //clear block
                   BF_UnpinBlock(block);
                   BF_Block_Destroy(&block);
